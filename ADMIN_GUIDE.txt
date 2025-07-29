@@ -1,0 +1,16 @@
+YMF Messaging Platform – Admin Guide
+
+As an admin (you or Sue), you can:
+- Approve or remove members
+- Add/remove users from chat rooms
+- Send messages to all users in a room
+- Upload large files (video scores, audio etc.)
+- Limit member uploads to 10MB
+- Access all messages and media posted
+- Enforce quiet hours (9pm–8am)
+- Turn notifications on/off for your account
+
+Coming soon:
+- Firebase login integration
+- Chat room creation/deletion tools
+- Media uploads via Firebase Storage
