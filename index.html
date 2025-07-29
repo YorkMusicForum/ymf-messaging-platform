@@ -6,7 +6,6 @@
   <title>YMF Messaging Platform</title>
   <link rel="stylesheet" href="style.css" />
 
-  <!-- Firebase SDKs -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
@@ -23,20 +22,21 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth();
 
-    window.login = () => {
+    window.login = async () => {
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value.trim();
 
-      signInWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-          const user = userCredential.user;
-          document.getElementById('login-box').style.display = 'none';
-          document.getElementById('welcome-msg').innerText = `Welcome, ${user.email}`;
-          document.getElementById('main-content').style.display = 'block';
-        })
-        .catch((error) => {
-          alert("Login failed: " + error.message);
-        });
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        document.getElementById('login-box').style.display = 'none';
+        document.getElementById('welcome-msg').innerText = `Welcome, ${user.email}`;
+        document.getElementById('main-content').style.display = 'block';
+      } catch (error) {
+        console.error("Login error:", error);
+        alert("Login failed: " + error.message);
+      }
     };
   </script>
 </head>
