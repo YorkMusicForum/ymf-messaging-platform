@@ -5,15 +5,41 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>YMF Messaging Platform</title>
   <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=ABeeZee&family=Muli&display=swap" rel="stylesheet">
 </head>
 <body>
   <header>
-    <h1>🎷 YMF Messaging Platform</h1>
+    <img src="assets/ymf-logo.png" alt="YMF Logo" class="logo" />
+    <h1>YMF Messaging Platform</h1>
     <p>Welcome to your secure communication space.</p>
   </header>
+
   <main>
-    <p>This is a placeholder homepage. Full messaging functionality connects through Firebase.</p>
+    <section class="auth-box">
+      <h2>Sign In</h2>
+      <input type="email" placeholder="Email" id="email" />
+      <input type="password" placeholder="Password" id="password" />
+      <button id="login-btn">Login</button>
+      <p class="note">Don't have an account? Ask your group leader.</p>
+    </section>
+
+    <section class="room-list">
+      <h2>Your Chat Rooms</h2>
+      <ul>
+        <li>Adult Jazz Ensemble Members</li>
+        <li>Youth Jazz Ensemble Members</li>
+        <li>Youth Jazz Ensemble Parents</li>
+        <li>Next Wave Youth Jazz Ensemble Members</li>
+        <li>Next Wave Youth Jazz Ensemble Parents</li>
+        <li>Harmony Club</li>
+      </ul>
+    </section>
   </main>
-  <script type="module" src="scripts/app.js"></script>
+
+  <footer>
+    <p>&copy; York Music Forum</p>
+  </footer>
+
+  <script src="scripts/app.js" type="module"></script>
 </body>
 </html>
