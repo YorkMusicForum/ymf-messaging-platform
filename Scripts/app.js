@@ -1,4 +1,4 @@
-// Placeholder for Firebase + messaging logic
-console.log("App loaded — Firebase setup goes here.");
+// scripts/app.js
 
-// Later: add Firebase auth, messaging, notifications, and media upload
+// Placeholder for Firebase connection
+console.log("App loaded. Ready to connect to Firebase...");
