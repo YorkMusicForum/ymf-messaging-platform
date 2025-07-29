@@ -2,9 +2,60 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>YMF Messaging Platform</title>
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fff;
+      color: #000;
+      margin: 2rem;
+      text-align: center;
+    }
+    h1, h2 {
+      color: #8b1453;
+    }
+    input {
+      font-size: 1rem;
+      padding: 0.5rem;
+      margin: 0.5rem 0;
+      width: 250px;
+    }
+    button {
+      background-color: #8b1453;
+      color: white;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #6a0f3e;
+    }
+    #main-content {
+      margin-top: 2rem;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <img src="assets/ymf-logo.png" alt="YMF Logo" style="width:150px; margin-bottom: 1rem;" />
+
+  <h1>YMF Messaging Platform</h1>
+
+  <div id="login-box">
+    <h2>Sign In</h2>
+    <input id="email" type="email" placeholder="Email" required /><br />
+    <input id="password" type="password" placeholder="Password" required /><br />
+    <button onclick="login()">Login</button>
+  </div>
+
+  <div id="main-content">
+    <h2>Welcome</h2>
+    <p id="welcome-msg"></p>
+    <p>This is where your chat will appear after login.</p>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
@@ -23,40 +74,29 @@
     const auth = getAuth();
 
     window.login = async () => {
+      console.log('Login button clicked');
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value.trim();
+
+      if (!email || !password) {
+        alert('Please enter email and password.');
+        return;
+      }
 
       try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
+        console.log('Logged in as:', user.email);
 
         document.getElementById('login-box').style.display = 'none';
         document.getElementById('welcome-msg').innerText = `Welcome, ${user.email}`;
         document.getElementById('main-content').style.display = 'block';
       } catch (error) {
-        console.error("Login error:", error);
-        alert("Login failed: " + error.message);
+        console.error('Login failed:', error);
+        alert('Login failed: ' + error.message);
       }
     };
   </script>
-</head>
-<body>
-  <div class="container">
-    <img src="assets/ymf-logo.png" alt="YMF Logo" style="width: 150px; margin-bottom: 1rem;" />
 
-    <h1>YMF Messaging Platform</h1>
-
-    <div id="login-box">
-      <h2>Sign In</h2>
-      <input type="email" id="email" placeholder="Email" required /><br />
-      <input type="password" id="password" placeholder="Password" required /><br />
-      <button onclick="login()">Login</button>
-    </div>
-
-    <div id="main-content" style="display:none;">
-      <p id="welcome-msg"></p>
-      <p>This is where the chat interface will appear.</p>
-    </div>
-  </div>
 </body>
 </html>
