@@ -2,44 +2,61 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>YMF Messaging Platform</title>
   <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=ABeeZee&family=Muli&display=swap" rel="stylesheet">
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCp94HHzIFiZh5kZREi7ZIVVL67IMnHEXw",
+      authDomain: "ymf-messaging-platform.firebaseapp.com",
+      projectId: "ymf-messaging-platform",
+      storageBucket: "ymf-messaging-platform.firebasestorage.app",
+      messagingSenderId: "820655157281",
+      appId: "1:820655157281:web:9713621443c068abd73360"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+
+    window.login = () => {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+
+      signInWithEmailAndPassword(auth, email, password)
+        .then((userCredential) => {
+          const user = userCredential.user;
+          document.getElementById('login-box').style.display = 'none';
+          document.getElementById('welcome-msg').innerText = `Welcome, ${user.email}`;
+          document.getElementById('main-content').style.display = 'block';
+        })
+        .catch((error) => {
+          alert("Login failed: " + error.message);
+        });
+    };
+  </script>
 </head>
 <body>
-  <header>
-    <img src="assets/ymf-logo.png" alt="YMF Logo" class="logo" />
+  <div class="container">
+    <img src="assets/ymf-logo.png" alt="YMF Logo" style="width: 150px; margin-bottom: 1rem;" />
+
     <h1>YMF Messaging Platform</h1>
-    <p>Welcome to your secure communication space.</p>
-  </header>
 
-  <main>
-    <section class="auth-box">
+    <div id="login-box">
       <h2>Sign In</h2>
-      <input type="email" placeholder="Email" id="email" />
-      <input type="password" placeholder="Password" id="password" />
-      <button id="login-btn">Login</button>
-      <p class="note">Don't have an account? Ask your group leader.</p>
-    </section>
+      <input type="email" id="email" placeholder="Email" required /><br />
+      <input type="password" id="password" placeholder="Password" required /><br />
+      <button onclick="login()">Login</button>
+    </div>
 
-    <section class="room-list">
-      <h2>Your Chat Rooms</h2>
-      <ul>
-        <li>Adult Jazz Ensemble Members</li>
-        <li>Youth Jazz Ensemble Members</li>
-        <li>Youth Jazz Ensemble Parents</li>
-        <li>Next Wave Youth Jazz Ensemble Members</li>
-        <li>Next Wave Youth Jazz Ensemble Parents</li>
-        <li>Harmony Club</li>
-      </ul>
-    </section>
-  </main>
-
-  <footer>
-    <p>&copy; York Music Forum</p>
-  </footer>
-
-  <script src="scripts/app.js" type="module"></script>
+    <div id="main-content" style="display:none;">
+      <p id="welcome-msg"></p>
+      <p>This is where the chat interface will appear.</p>
+    </div>
+  </div>
 </body>
 </html>
