@@ -3,89 +3,39 @@
 <head>
   <meta charset="UTF-8" />
   <title>YMF Messaging Platform</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ABeeZee&family=Muli&display=swap">
-  <style>
-    body {
-      font-family: 'Muli', sans-serif;
-      text-align: center;
-      margin: 0;
-      padding: 2rem;
-      background-color: #fff;
-      color: #333;
-    }
-    h1 {
-      font-family: 'ABeeZee', sans-serif;
-      color: #8b1453;
-    }
-    #logo {
-      max-width: 150px;
-      margin-bottom: 1rem;
-    }
-    #loginForm, #welcomeSection {
-      margin-top: 2rem;
-    }
-    input, button {
-      padding: 10px;
-      font-size: 1rem;
-      margin: 5px;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css" />
+  <script type="module" src="app.js"></script>
 </head>
 <body>
-  <img id="logo" src="assets/ymf-logo.png" alt="YMF Logo" />
-  <h1>YMF Messaging Platform</h1>
+  <header>
+    <img src="assets/ymf-logo.png" alt="YMF Logo" class="logo" />
+    <h1>YMF Messaging Platform</h1>
+  </header>
 
-  <div id="loginForm">
-    <p>Login below:</p>
-    <input type="email" id="email" placeholder="Email" /><br />
-    <input type="password" id="password" placeholder="Password" /><br />
-    <button onclick="login()">Login</button>
-  </div>
+  <main>
+    <div id="welcome" class="panel">
+      <p>Welcome, <span id="user-email"></span></p>
+    </div>
 
-  <div id="welcomeSection" style="display:none;">
-    <h2>Welcome</h2>
-    <p id="userEmail"></p>
-    <p>This is where your chat will appear after login.</p>
-  </div>
+    <div id="chatroom-list" class="panel">
+      <h2>Available Chat Rooms</h2>
+      <ul id="room-buttons">
+        <li><button onclick="openRoom('Adult Jazz Ensemble Members')">Adult Jazz Ensemble Members</button></li>
+        <li><button onclick="openRoom('Youth Jazz Ensemble Members')">Youth Jazz Ensemble Members</button></li>
+        <li><button onclick="openRoom('Youth Jazz Ensemble Parents')">Youth Jazz Ensemble Parents</button></li>
+        <li><button onclick="openRoom('Next Wave Youth Jazz Ensemble Members')">Next Wave Youth Jazz Ensemble Members</button></li>
+        <li><button onclick="openRoom('Next Wave Youth Jazz Ensemble Parents')">Next Wave Youth Jazz Ensemble Parents</button></li>
+        <li><button onclick="openRoom('Harmony Club')">Harmony Club</button></li>
+      </ul>
+    </div>
 
-  <!-- Firebase -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyCp94HHzIFiZh5kZREi7ZIVVL67IMnHEXw",
-      authDomain: "ymf-messaging-platform.firebaseapp.com",
-      projectId: "ymf-messaging-platform",
-      storageBucket: "ymf-messaging-platform.firebasestorage.app",
-      messagingSenderId: "820655157281",
-      appId: "1:820655157281:web:9713621443c068abd73360"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth();
-
-    window.login = function() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-
-      signInWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-          const user = userCredential.user;
-          console.log("Logged in as:", user.email);
-        })
-        .catch((error) => {
-          alert("Login failed: " + error.message);
-        });
-    };
-
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        document.getElementById("loginForm").style.display = "none";
-        document.getElementById("welcomeSection").style.display = "block";
-        document.getElementById("userEmail").innerText = `Welcome, ${user.email}`;
-      }
-    });
-  </script>
+    <div id="chatroom" class="panel hidden">
+      <h2 id="room-title">Chat Room</h2>
+      <div id="messages">
+        <p>This is where messages for this room will appear.</p>
+      </div>
+      <button onclick="goBack()">Back to rooms</button>
+    </div>
+  </main>
 </body>
 </html>
