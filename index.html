@@ -2,40 +2,110 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>YMF Messaging Platform</title>
-  <link rel="stylesheet" href="style.css" />
-  <script type="module" src="app.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=ABeeZee&family=Muli&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Muli', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
+    }
+
+    header {
+      background-color: #8b1453;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    header img {
+      height: 60px;
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: 'ABeeZee', sans-serif;
+      margin: 0.2rem 0 0.5rem;
+    }
+
+    main {
+      max-width: 600px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    #login-area, #chatroom-list, #chatroom-view {
+      display: none;
+    }
+
+    .chatroom-button {
+      background-color: #8b1453;
+      color: white;
+      padding: 0.75rem 1rem;
+      margin: 0.5rem 0;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 1rem;
+      font-family: 'ABeeZee', sans-serif;
+    }
+
+    .chatroom-button:hover {
+      background-color: #a01860;
+    }
+
+    .back-button {
+      margin-top: 1rem;
+      display: inline-block;
+      color: #8b1453;
+      cursor: pointer;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
   <header>
-    <img src="assets/ymf-logo.png" alt="YMF Logo" class="logo" />
+    <img src="assets/ymf-logo.png" alt="YMF Logo" />
     <h1>YMF Messaging Platform</h1>
   </header>
 
   <main>
-    <div id="welcome" class="panel">
-      <p>Welcome, <span id="user-email"></span></p>
+    <div id="login-area">
+      <h2>Login</h2>
+      <input type="email" id="email" placeholder="Email" /><br /><br />
+      <input type="password" id="password" placeholder="Password" /><br /><br />
+      <button onclick="login()">Login</button>
     </div>
 
-    <div id="chatroom-list" class="panel">
-      <h2>Available Chat Rooms</h2>
-      <ul id="room-buttons">
-        <li><button onclick="openRoom('Adult Jazz Ensemble Members')">Adult Jazz Ensemble Members</button></li>
-        <li><button onclick="openRoom('Youth Jazz Ensemble Members')">Youth Jazz Ensemble Members</button></li>
-        <li><button onclick="openRoom('Youth Jazz Ensemble Parents')">Youth Jazz Ensemble Parents</button></li>
-        <li><button onclick="openRoom('Next Wave Youth Jazz Ensemble Members')">Next Wave Youth Jazz Ensemble Members</button></li>
-        <li><button onclick="openRoom('Next Wave Youth Jazz Ensemble Parents')">Next Wave Youth Jazz Ensemble Parents</button></li>
-        <li><button onclick="openRoom('Harmony Club')">Harmony Club</button></li>
-      </ul>
+    <div id="welcome-area">
+      <h2>Welcome</h2>
+      <p id="user-info">Welcome, <span id="user-email"></span></p>
     </div>
 
-    <div id="chatroom" class="panel hidden">
-      <h2 id="room-title">Chat Room</h2>
-      <div id="messages">
-        <p>This is where messages for this room will appear.</p>
-      </div>
-      <button onclick="goBack()">Back to rooms</button>
+    <div id="chatroom-list">
+      <h3>Select a Chat Room</h3>
+      <button class="chatroom-button" data-room="Adult Jazz Ensemble Members">Adult Jazz Ensemble Members</button>
+      <button class="chatroom-button" data-room="Youth Jazz Ensemble Members">Youth Jazz Ensemble Members</button>
+      <button class="chatroom-button" data-room="Youth Jazz Ensemble Parents">Youth Jazz Ensemble Parents</button>
+      <button class="chatroom-button" data-room="Next Wave Youth Jazz Ensemble Members">Next Wave Youth Jazz Ensemble Members</button>
+      <button class="chatroom-button" data-room="Next Wave Youth Jazz Ensemble Parents">Next Wave Youth Jazz Ensemble Parents</button>
+      <button class="chatroom-button" data-room="Harmony Club">Harmony Club</button>
+    </div>
+
+    <div id="chatroom-view">
+      <h3 id="chatroom-title">Chat Room</h3>
+      <p>This is where chat messages will appear.</p>
+      <div class="back-button" onclick="backToRooms()">← Back to rooms</div>
     </div>
   </main>
+
+  <!-- Load the Firebase script -->
+  <script type="module" src="scripts/app.js"></script>
 </body>
 </html>
