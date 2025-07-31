@@ -4,71 +4,78 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>YMF Admin Panel</title>
-  <link href="https://fonts.googleapis.com/css2?family=ABeeZee&family=Muli&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=ABeeZee&family=Muli&display=swap" rel="stylesheet" />
   <style>
     body {
-      font-family: "Muli", sans-serif;
+      font-family: 'Muli', sans-serif;
       background-color: white;
       color: #8b1453;
-      margin: 0;
-      padding: 1rem;
+      padding: 2rem;
     }
-    h1, h2, h3 {
-      font-family: "ABeeZee", sans-serif;
+    h1, h2 {
+      font-family: 'ABeeZee', sans-serif;
       color: #8b1453;
+    }
+    .hidden {
+      display: none;
     }
     button {
       background-color: #8b1453;
       color: white;
       border: none;
       padding: 8px 12px;
-      margin: 4px 4px 4px 0;
+      margin: 4px;
       cursor: pointer;
-      font-size: 1rem;
       border-radius: 4px;
     }
     button:hover {
       background-color: #a92970;
     }
-    .hidden {
-      display: none;
-    }
-    .admin-section {
+    .section {
       margin-bottom: 2rem;
     }
     input {
       padding: 6px;
-      margin-right: 10px;
-      font-size: 1rem;
+      margin: 4px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    td, th {
+      padding: 8px;
+      border: 1px solid #8b1453;
     }
   </style>
 </head>
 <body>
   <header>
-    <img src="assets/ymf-logo.png" alt="York Music Forum Logo" style="height:50px;"/>
+    <img src="assets/ymf-logo.png" alt="YMF Logo" style="height: 50px;" />
     <h1>YMF Admin Panel</h1>
   </header>
 
-  <main>
-    <section class="admin-section">
-      <h2>Approve New Members</h2>
-      <ul id="pending-users"></ul>
-    </section>
+  <div id="access-denied" class="hidden">
+    <p>You do not have permission to access this page.</p>
+  </div>
 
-    <section class="admin-section">
-      <h2>Manage Chatrooms</h2>
-      <div>
-        <input type="text" id="new-room-name" placeholder="New chatroom name" />
-        <button onclick="createChatroom()">Create Chatroom</button>
-      </div>
+  <div id="admin-panel" class="hidden">
+    <h2>Pending Member Approvals</h2>
+    <ul id="pending-users"></ul>
+
+    <h2>Approved Members</h2>
+    <ul id="approved-users"></ul>
+
+    <div class="section">
+      <h2>Create New Chatroom</h2>
+      <input type="text" id="new-chatroom-name" placeholder="Chatroom Name" />
+      <button onclick="createChatroom()">Create Chatroom</button>
+    </div>
+
+    <div class="section">
+      <h2>Existing Chatrooms</h2>
       <ul id="chatroom-list"></ul>
-    </section>
-
-    <section class="admin-section">
-      <h2>Manage Existing Users</h2>
-      <ul id="approved-users"></ul>
-    </section>
-  </main>
+    </div>
+  </div>
 
   <script type="module" src="scripts/admin.js"></script>
 </body>
