@@ -1,21 +1,41 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, addDoc, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+// Import Firebase modules
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+} from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  query,
+  orderBy,
+  limit,
+  onSnapshot,
+  doc,
+  setDoc,
+  getDoc,
+} from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
+// Your Firebase config - replace with your own from Firebase console
 const firebaseConfig = {
-  apiKey: "AIzaSyCp94HHzIFiZh5kZREi7ZIVVL67IMnHEXw",
-  authDomain: "ymf-messaging-platform.firebaseapp.com",
-  projectId: "ymf-messaging-platform",
-  storageBucket: "ymf-messaging-platform.appspot.com",
-  messagingSenderId: "820655157281",
-  appId: "1:820655157281:web:9713621443c068abd73360"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID",
 };
 
+// Initialize Firebase app, auth, and Firestore
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// DOM elements
+// Get UI elements
 const loginArea = document.getElementById("login-area");
 const signupArea = document.getElementById("signup-area");
 const welcomeArea = document.getElementById("welcome-area");
@@ -27,30 +47,25 @@ const messagesDiv = document.getElementById("messages");
 const messageInput = document.getElementById("message-input");
 const sendMessageBtn = document.getElementById("send-message");
 
-// Track current user and chatroom
 let currentUser = null;
 let currentRoom = null;
 let unsubscribeMessages = null;
 
-// Show or hide sign up/login
-window.showLogin = function () {
-  signupArea.classList.add("hidden");
-  loginArea.classList.remove("hidden");
-};
-window.showSignUp = function () {
+// Show signup form (optional, create the div in index.html)
+window.showSignup = function () {
   loginArea.classList.add("hidden");
   signupArea.classList.remove("hidden");
 };
 
-// Sign Up new user
-window.signUp = async function () {
-  const firstName = document.getElementById("firstName").value.trim();
-  const surname = document.getElementById("surname").value.trim();
+// Signup function
+window.signup = async function () {
+  const firstName = document.getElementById("signup-firstname").value.trim();
+  const lastName = document.getElementById("signup-lastname").value.trim();
   const email = document.getElementById("signup-email").value.trim();
   const password = document.getElementById("signup-password").value;
 
-  if (!firstName || !surname || !email || !password) {
-    alert("Please fill all sign-up fields.");
+  if (!firstName || !lastName || !email || !password) {
+    alert("Please fill in all sign up fields.");
     return;
   }
 
@@ -58,24 +73,26 @@ window.signUp = async function () {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // Add user data to Firestore with approved = false
+    // Save user info in Firestore users collection, with approved: false
     await setDoc(doc(db, "users", user.uid), {
-      email: email,
-      firstName: firstName,
-      surname: surname,
+      firstName,
+      lastName,
+      email,
       approved: false,
-      fullName: firstName + " " + surname,
     });
 
-    alert("Sign-up successful! Your account is pending approval.");
-    showLogin();
+    alert("Sign up successful! Please wait for approval before logging in.");
+
+    // Return to login screen
+    signupArea.classList.add("hidden");
+    loginArea.classList.remove("hidden");
 
   } catch (error) {
-    alert("Error signing up: " + error.message);
+    alert("Sign up failed: " + error.message);
   }
 };
 
-// Login existing user
+// Login function
 window.login = async function () {
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
@@ -89,22 +106,127 @@ window.login = async function () {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // Check if user is approved
     const userDoc = await getDoc(doc(db, "users", user.uid));
-    if (!userDoc.exists()) {
-      alert("User data not found. Contact admin.");
+    if (!userDoc.exists() || !userDoc.data().approved) {
+      alert("Your account is not approved yet. Please wait for approval.");
       await signOut(auth);
       return;
     }
-    const userData = userDoc.data();
-    if (!userData.approved) {
-      alert("Your account is not approved yet. Please wait for approval
 
+    // User approved
+    currentUser = user;
+    userEmailSpan.textContent = email;
+    loginArea.classList.add("hidden");
+    signupArea.classList.add("hidden");
+    welcomeArea.classList.remove("hidden");
+    chatroomList.classList.remove("hidden");
+    chatroomDiv.classList.add("hidden");
 
+  } catch (error) {
+    alert("Login failed: " + error.message);
+  }
+};
 
+// Logout function
+window.logout = async function () {
+  if (unsubscribeMessages) unsubscribeMessages();
+  await signOut(auth);
+  currentUser = null;
+  currentRoom = null;
+  welcomeArea.classList.add("hidden");
+  chatroomList.classList.add("hidden");
+  chatroomDiv.classList.add("hidden");
+  loginArea.classList.remove("hidden");
+  signupArea.classList.add("hidden");
+};
 
+// Load messages for a chatroom and listen for updates
+function loadMessages(room) {
+  if (unsubscribeMessages) unsubscribeMessages();
+  messagesDiv.innerHTML = "";
+  currentRoom = room;
+  roomTitle.textContent = room;
 
+  const messagesRef = collection(db, "chatrooms", room, "messages");
+  const q = query(messagesRef, orderBy("timestamp", "asc"), limit(100));
 
-Ask ChatGPT
+  unsubscribeMessages = onSnapshot(q, (snapshot) => {
+    messagesDiv.innerHTML = "";
+    snapshot.forEach((docSnap) => {
+      const msg = docSnap.data();
+      const msgDiv = document.createElement("div");
+      msgDiv.textContent = `${msg.senderName}: ${msg.text}`;
+      messagesDiv.appendChild(msgDiv);
+    });
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  });
+}
 
+// Send a message
+sendMessageBtn.addEventListener("click", async () => {
+  if (!messageInput.value.trim()) return;
+  if (!currentRoom || !currentUser) return;
 
+  const messagesRef = collection(db, "chatrooms", currentRoom, "messages");
+
+  try {
+    await addDoc(messagesRef, {
+      text: messageInput.value.trim(),
+      senderId: currentUser.uid,
+      senderName: currentUser.email,
+      timestamp: new Date(),
+    });
+    messageInput.value = "";
+  } catch (error) {
+    alert("Failed to send message: " + error.message);
+  }
+});
+
+// Chatroom buttons
+document.querySelectorAll(".chatroom-button").forEach((button) => {
+  button.addEventListener("click", () => {
+    chatroomList.classList.add("hidden");
+    chatroomDiv.classList.remove("hidden");
+    loadMessages(button.dataset.room);
+  });
+});
+
+// Return to chatroom list
+window.goBack = function () {
+  if (unsubscribeMessages) unsubscribeMessages();
+  chatroomDiv.classList.add("hidden");
+  chatroomList.classList.remove("hidden");
+  messagesDiv.innerHTML = "";
+  currentRoom = null;
+};
+
+// Monitor auth state and update UI accordingly
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    if (userDoc.exists() && userDoc.data().approved) {
+      currentUser = user;
+      userEmailSpan.textContent = user.email;
+      loginArea.classList.add("hidden");
+      signupArea.classList.add("hidden");
+      welcomeArea.classList.remove("hidden");
+      chatroomList.classList.remove("hidden");
+      chatroomDiv.classList.add("hidden");
+    } else {
+      await signOut(auth);
+      currentUser = null;
+      loginArea.classList.remove("hidden");
+      signupArea.classList.add("hidden");
+      welcomeArea.classList.add("hidden");
+      chatroomList.classList.add("hidden");
+      chatroomDiv.classList.add("hidden");
+    }
+  } else {
+    currentUser = null;
+    loginArea.classList.remove("hidden");
+    signupArea.classList.add("hidden");
+    welcomeArea.classList.add("hidden");
+    chatroomList.classList.add("hidden");
+    chatroomDiv.classList.add("hidden");
+  }
+});
