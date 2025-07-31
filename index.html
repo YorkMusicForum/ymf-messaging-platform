@@ -2,97 +2,96 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>YMF Messaging Platform</title>
   <link href="https://fonts.googleapis.com/css2?family=ABeeZee&family=Muli&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: 'Muli', sans-serif;
-      background-color: white;
-      color: #8b1453;
+      background: white;
+      color: black;
       margin: 0;
-      padding: 1rem;
+      padding: 2rem;
     }
-    h1, h2, h3 {
+    h1, h2 {
       font-family: 'ABeeZee', sans-serif;
       color: #8b1453;
     }
-    .hidden {
-      display: none;
-    }
+    .hidden { display: none; }
     button {
-      background-color: #8b1453;
+      background: #8b1453;
       color: white;
       border: none;
-      padding: 8px 12px;
-      margin: 4px 0;
+      padding: 0.5rem 1rem;
+      margin: 0.25rem 0;
       cursor: pointer;
-      font-size: 1rem;
-      border-radius: 4px;
+      border-radius: 5px;
     }
-    button:hover {
-      background-color: #a92970;
+    input {
+      padding: 0.5rem;
+      margin: 0.25rem 0;
+      width: 100%;
     }
-    #chatroom-list, #chatroom {
-      margin-top: 20px;
+    #chatroom-list button {
+      display: block;
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+    #messages {
+      border: 1px solid #ccc;
+      padding: 1rem;
+      height: 200px;
+      overflow-y: scroll;
+      margin-bottom: 1rem;
     }
   </style>
 </head>
 <body>
 
-  <header>
-    <img src="assets/ymf-logo.png" alt="York Music Forum Logo" style="height:50px;"/>
-    <h1>YMF Messaging Platform</h1>
-  </header>
+  <h1>YMF Messaging Platform</h1>
 
-  <main>
-    <!-- Login form -->
-    <div id="login-area">
-      <h2>Login</h2>
-      <input type="email" id="email" placeholder="Email" /><br /><br />
-      <input type="password" id="password" placeholder="Password" /><br /><br />
-      <button onclick="login()">Login</button><br /><br />
-      <button onclick="toggleLoginSignup()">Go to Sign Up</button>
-    </div>
+  <!-- LOGIN -->
+  <div id="login-area">
+    <h2>Login</h2>
+    <input id="email" type="email" placeholder="Email" />
+    <input id="password" type="password" placeholder="Password" />
+    <button onclick="login()">Login</button>
+    <button id="go-to-signup">Go to Sign Up</button>
+  </div>
 
-    <!-- Sign-up form -->
-    <div id="signup-area" class="hidden">
-      <h2>Sign Up</h2>
-      <input type="text" id="signup-firstname" placeholder="First Name" /><br /><br />
-      <input type="text" id="signup-surname" placeholder="Surname" /><br /><br />
-      <input type="email" id="signup-email" placeholder="Email" /><br /><br />
-      <input type="password" id="signup-password" placeholder="Password" /><br /><br />
-      <button onclick="signup()">Sign Up</button><br /><br />
-      <button onclick="toggleLoginSignup()">Back to Login</button>
-    </div>
+  <!-- SIGN UP -->
+  <div id="signup-area" class="hidden">
+    <h2>Sign Up</h2>
+    <input id="signup-first-name" type="text" placeholder="First Name" />
+    <input id="signup-surname" type="text" placeholder="Surname" />
+    <input id="signup-email" type="email" placeholder="Email" />
+    <input id="signup-password" type="password" placeholder="Password" />
+    <button id="signup-button">Sign Up</button>
+  </div>
 
-    <!-- Welcome area -->
-    <div id="welcome-area" class="hidden">
-      <h2>Welcome</h2>
-      <p id="user-info">Welcome, <span id="user-email"></span></p>
-      <button onclick="logout()">Logout</button>
-    </div>
+  <!-- WELCOME -->
+  <div id="welcome-area" class="hidden">
+    <h2>Welcome</h2>
+    <p>Logged in as: <span id="user-email"></span></p>
+    <button onclick="logout()">Logout</button>
+  </div>
 
-    <!-- Chatroom list -->
-    <div id="chatroom-list" class="hidden">
-      <h3>Select a Chat Room</h3>
-      <button class="chatroom-button" data-room="Adult Jazz Ensemble Members">Adult Jazz Ensemble Members</button>
-      <button class="chatroom-button" data-room="Youth Jazz Ensemble Members">Youth Jazz Ensemble Members</button>
-      <button class="chatroom-button" data-room="Youth Jazz Ensemble Parents">Youth Jazz Ensemble Parents</button>
-      <button class="chatroom-button" data-room="Next Wave Youth Jazz Ensemble Members">Next Wave Youth Jazz Ensemble Members</button>
-      <button class="chatroom-button" data-room="Next Wave Youth Jazz Ensemble Parents">Next Wave Youth Jazz Ensemble Parents</button>
-      <button class="chatroom-button" data-room="Harmony Club">Harmony Club</button>
-    </div>
+  <!-- CHATROOM LIST -->
+  <div id="chatroom-list" class="hidden">
+    <h2>Chatrooms</h2>
+    <button class="chatroom-button" data-room="General">General</button>
+    <button class="chatroom-button" data-room="Saxophones">Saxophones</button>
+    <button class="chatroom-button" data-room="Trumpets">Trumpets</button>
+  </div>
 
-    <!-- Chatroom messages -->
-    <div id="chatroom" class="hidden">
-      <h3 id="room-title"></h3>
-      <div id="messages" style="border:1px solid #8b1453; height:200px; overflow-y:scroll; padding:10px; margin-bottom:10px;"></div>
-      <input type="text" id="message-input" placeholder="Type your message here..." style="width:80%;" />
-      <button id="send-message">Send</button><br /><br />
-      <button onclick="goBack()">Return to Chatrooms</button>
-    </div>
-  </main>
+  <!-- CHATROOM -->
+  <div id="chatroom" class="hidden">
+    <h2 id="room-title">Room</h2>
+    <div id="messages"></div>
+    <input id="message-input" type="text" placeholder="Type a message..." />
+    <button id="send-message">Send</button>
+    <button onclick="goBack()">Return to Chatrooms</button>
+  </div>
 
   <script type="module" src="scripts/app.js"></script>
 </body>
