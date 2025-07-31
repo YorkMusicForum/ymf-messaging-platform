@@ -1,21 +1,21 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
   getAuth,
-  onAuthStateChanged,
   signInWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut,
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 import {
   getFirestore,
   collection,
+  addDoc,
   query,
   where,
   orderBy,
   onSnapshot,
-  addDoc,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
-// Your Firebase config (don't change this)
 const firebaseConfig = {
   apiKey: "AIzaSyCp94HHzIFiZh5kZREi7ZIVVL67IMnHEXw",
   authDomain: "ymf-messaging-platform.firebaseapp.com",
@@ -29,92 +29,133 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-let unsubscribeMessages = null;
-let currentRoom = null;
+const loginArea = document.getElementById("login-area");
+const welcomeArea = document.getElementById("welcome-area");
+const chatroomList = document.getElementById("chatroom-list");
+const chatroomDiv = document.getElementById("chatroom");
+const userEmailSpan = document.getElementById("user-email");
+const roomTitle = document.getElementById("room-title");
+const messagesDiv = document.getElementById("messages");
+const messageInput = document.getElementById("message-input");
 
-// Login function called by the login button
-window.login = async function () {
-  const email = document.getElementById("email").value;
+let currentRoom = null;
+let unsubscribeMessages = null;
+
+// Login function called on login button click
+window.login = function () {
+  const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-  } catch (error) {
-    alert("Login failed: " + error.message);
+
+  if (!email || !password) {
+    alert("Please enter both email and password.");
+    return;
   }
+
+  signInWithEmailAndPassword(auth, email, password)
+    .then(() => {
+      // Successful login handled by onAuthStateChanged
+    })
+    .catch((error) => {
+      alert("Login failed: " + error.message);
+    });
 };
 
-// When user logs in/out update UI
+// Listen for auth state changes (login/logout)
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    document.getElementById("login-area").style.display = "none";
-    document.getElementById("welcome-area").style.display = "block";
-    document.getElementById("user-email").textContent = user.email;
-    document.getElementById("chatroom-list").style.display = "block";
+    // User is logged in
+    loginArea.classList.add("hidden");
+    welcomeArea.classList.remove("hidden");
+    chatroomList.classList.remove("hidden");
+    chatroomDiv.classList.add("hidden");
+    userEmailSpan.textContent = user.email;
   } else {
-    document.getElementById("login-area").style.display = "block";
-    document.getElementById("welcome-area").style.display = "none";
-    document.getElementById("chatroom-list").style.display = "none";
-    if (unsubscribeMessages) unsubscribeMessages();
-    document.getElementById("chatroom").style.display = "none";
+    // User logged out or no user
+    loginArea.classList.remove("hidden");
+    welcomeArea.classList.add("hidden");
+    chatroomList.classList.add("hidden");
+    chatroomDiv.classList.add("hidden");
+    userEmailSpan.textContent = "";
+    if (unsubscribeMessages) {
+      unsubscribeMessages();
+      unsubscribeMessages = null;
+    }
   }
 });
 
-// Open chatroom and start listening for messages
+// Open chatroom function called on chatroom button click
 window.openRoom = function (roomName) {
   currentRoom = roomName;
-  document.getElementById("chatroom-list").style.display = "none";
-  document.getElementById("chatroom").style.display = "block";
-  document.getElementById("room-title").textContent = roomName;
+  roomTitle.textContent = roomName;
 
-  const messagesDiv = document.getElementById("messages");
-  messagesDiv.innerHTML = "Loading messages...";
+  chatroomList.classList.add("hidden");
+  chatroomDiv.classList.remove("hidden");
 
-  if (unsubscribeMessages) unsubscribeMessages();
+  messagesDiv.innerHTML = ""; // clear previous messages
 
+  // Unsubscribe from any previous listener
+  if (unsubscribeMessages) {
+    unsubscribeMessages();
+    unsubscribeMessages = null;
+  }
+
+  // Query messages for this room ordered by timestamp ascending
   const messagesRef = collection(db, "messages");
   const q = query(
     messagesRef,
-    where("room", "==", roomName),
-    orderBy("timestamp", "asc")
+    where("room", "==", currentRoom),
+    orderBy("createdAt")
   );
 
-  unsubscribeMessages = onSnapshot(q, (querySnapshot) => {
+  unsubscribeMessages = onSnapshot(q, (snapshot) => {
     messagesDiv.innerHTML = "";
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      const msgElem = document.createElement("div");
-      msgElem.textContent = `${data.sender}: ${data.text}`;
-      messagesDiv.appendChild(msgElem);
+    snapshot.forEach((doc) => {
+      const msg = doc.data();
+      const messageElement = document.createElement("p");
+      messageElement.textContent = `${msg.user}: ${msg.text}`;
+      messagesDiv.appendChild(messageElement);
     });
+    // Scroll to bottom when new messages arrive
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   });
 };
 
-// Return to chatroom list and stop listening
-window.goBack = function () {
-  if (unsubscribeMessages) unsubscribeMessages();
-  document.getElementById("chatroom").style.display = "none";
-  document.getElementById("chatroom-list").style.display = "block";
-  currentRoom = null;
-};
-
-// Send a message when the send button is clicked
+// Send message function called on Send button click
 window.sendMessage = async function () {
-  if (!currentRoom) return;
+  const text = messageInput.value.trim();
+  if (!text) return;
 
-  const input = document.getElementById("message-input");
-  const text = input.value.trim();
-  if (text === "") return;
+  const user = auth.currentUser;
+  if (!user) {
+    alert("You must be logged in to send messages.");
+    return;
+  }
+
+  if (!currentRoom) {
+    alert("No chat room selected.");
+    return;
+  }
 
   try {
     await addDoc(collection(db, "messages"), {
       room: currentRoom,
-      sender: auth.currentUser.email,
+      user: user.email,
       text: text,
-      timestamp: serverTimestamp(),
+      createdAt: serverTimestamp(),
     });
-    input.value = "";
+    messageInput.value = "";
   } catch (error) {
     alert("Failed to send message: " + error.message);
   }
+};
+
+// Return to chatrooms button
+window.goBack = function () {
+  currentRoom = null;
+  if (unsubscribeMessages) {
+    unsubscribeMessages();
+    unsubscribeMessages = null;
+  }
+  chatroomDiv.classList.add("hidden");
+  chatroomList.classList.remove("hidden");
 };
