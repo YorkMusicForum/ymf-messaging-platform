@@ -1,21 +1,21 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
   getAuth,
-  signInWithEmailAndPassword,
   onAuthStateChanged,
-  signOut,
+  signInWithEmailAndPassword,
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 import {
   getFirestore,
   collection,
-  addDoc,
   query,
   where,
-  onSnapshot,
   orderBy,
+  onSnapshot,
+  addDoc,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
+// Your Firebase config (don't change this)
 const firebaseConfig = {
   apiKey: "AIzaSyCp94HHzIFiZh5kZREi7ZIVVL67IMnHEXw",
   authDomain: "ymf-messaging-platform.firebaseapp.com",
@@ -29,27 +29,13 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const loginArea = document.getElementById("login-area");
-const welcomeArea = document.getElementById("welcome-area");
-const chatroomList = document.getElementById("chatroom-list");
-const chatroomDiv = document.getElementById("chatroom");
-const userEmailSpan = document.getElementById("user-email");
-const roomTitle = document.getElementById("room-title");
-const messagesDiv = document.getElementById("messages");
-const messageInput = document.getElementById("message-input");
-
-let currentRoom = null;
 let unsubscribeMessages = null;
+let currentRoom = null;
 
+// Login function called by the login button
 window.login = async function () {
-  const email = document.getElementById("email").value.trim();
+  const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
-
-  if (!email || !password) {
-    alert("Please enter email and password.");
-    return;
-  }
-
   try {
     await signInWithEmailAndPassword(auth, email, password);
   } catch (error) {
@@ -57,43 +43,39 @@ window.login = async function () {
   }
 };
 
+// When user logs in/out update UI
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    loginArea.classList.add("hidden");
-    welcomeArea.classList.remove("hidden");
-    chatroomList.classList.remove("hidden");
-    userEmailSpan.textContent = user.email;
+    document.getElementById("login-area").style.display = "none";
+    document.getElementById("welcome-area").style.display = "block";
+    document.getElementById("user-email").textContent = user.email;
+    document.getElementById("chatroom-list").style.display = "block";
   } else {
-    loginArea.classList.remove("hidden");
-    welcomeArea.classList.add("hidden");
-    chatroomList.classList.add("hidden");
-    chatroomDiv.classList.add("hidden");
-    userEmailSpan.textContent = "";
-    if (unsubscribeMessages) {
-      unsubscribeMessages();
-      unsubscribeMessages = null;
-    }
+    document.getElementById("login-area").style.display = "block";
+    document.getElementById("welcome-area").style.display = "none";
+    document.getElementById("chatroom-list").style.display = "none";
+    if (unsubscribeMessages) unsubscribeMessages();
+    document.getElementById("chatroom").style.display = "none";
   }
 });
 
+// Open chatroom and start listening for messages
 window.openRoom = function (roomName) {
   currentRoom = roomName;
+  document.getElementById("chatroom-list").style.display = "none";
+  document.getElementById("chatroom").style.display = "block";
+  document.getElementById("room-title").textContent = roomName;
 
-  chatroomList.classList.add("hidden");
-  chatroomDiv.classList.remove("hidden");
-  roomTitle.textContent = roomName;
+  const messagesDiv = document.getElementById("messages");
+  messagesDiv.innerHTML = "Loading messages...";
 
-  messagesDiv.innerHTML = "";
-
-  // Stop listening to previous room messages if any
   if (unsubscribeMessages) unsubscribeMessages();
 
-  // Listen to messages from Firestore for the selected room
   const messagesRef = collection(db, "messages");
   const q = query(
     messagesRef,
     where("room", "==", roomName),
-    orderBy("timestamp")
+    orderBy("timestamp", "asc")
   );
 
   unsubscribeMessages = onSnapshot(q, (querySnapshot) => {
@@ -104,47 +86,35 @@ window.openRoom = function (roomName) {
       msgElem.textContent = `${data.sender}: ${data.text}`;
       messagesDiv.appendChild(msgElem);
     });
-    // Scroll to bottom
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   });
 };
 
+// Return to chatroom list and stop listening
 window.goBack = function () {
-  chatroomDiv.classList.add("hidden");
-  chatroomList.classList.remove("hidden");
+  if (unsubscribeMessages) unsubscribeMessages();
+  document.getElementById("chatroom").style.display = "none";
+  document.getElementById("chatroom-list").style.display = "block";
   currentRoom = null;
-  if (unsubscribeMessages) {
-    unsubscribeMessages();
-    unsubscribeMessages = null;
-  }
 };
 
+// Send a message when the send button is clicked
 window.sendMessage = async function () {
   if (!currentRoom) return;
 
-  const text = messageInput.value.trim();
-  if (!text) return;
-
-  const user = auth.currentUser;
-  if (!user) return alert("You must be logged in to send messages.");
+  const input = document.getElementById("message-input");
+  const text = input.value.trim();
+  if (text === "") return;
 
   try {
     await addDoc(collection(db, "messages"), {
       room: currentRoom,
-      sender: user.email,
-      text,
+      sender: auth.currentUser.email,
+      text: text,
       timestamp: serverTimestamp(),
     });
-    messageInput.value = "";
+    input.value = "";
   } catch (error) {
-    alert("Error sending message: " + error.message);
+    alert("Failed to send message: " + error.message);
   }
 };
-
-// Attach click listeners to chatroom buttons
-document.querySelectorAll(".chatroom-button").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const roomName = btn.getAttribute("data-room");
-    openRoom(roomName);
-  });
-});
