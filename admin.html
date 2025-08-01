@@ -2,81 +2,150 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>YMF Admin Panel</title>
-  <link href="https://fonts.googleapis.com/css2?family=ABeeZee&family=Muli&display=swap" rel="stylesheet" />
   <style>
     body {
-      font-family: 'Muli', sans-serif;
-      background-color: white;
-      color: #8b1453;
-      padding: 2rem;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
     }
     h1, h2 {
-      font-family: 'ABeeZee', sans-serif;
       color: #8b1453;
+    }
+    ul {
+      list-style-type: none;
+      padding-left: 0;
+    }
+    li {
+      margin: 10px 0;
+    }
+    button {
+      margin-left: 10px;
+      padding: 4px 8px;
     }
     .hidden {
       display: none;
     }
-    button {
-      background-color: #8b1453;
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      margin: 4px;
-      cursor: pointer;
-      border-radius: 4px;
-    }
-    button:hover {
-      background-color: #a92970;
-    }
     .section {
-      margin-bottom: 2rem;
-    }
-    input {
-      padding: 6px;
-      margin: 4px;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-    }
-    td, th {
-      padding: 8px;
-      border: 1px solid #8b1453;
+      margin-bottom: 40px;
     }
   </style>
 </head>
 <body>
-  <header>
-    <img src="assets/ymf-logo.png" alt="YMF Logo" style="height: 50px;" />
-    <h1>YMF Admin Panel</h1>
-  </header>
+  <h1>YMF Admin Panel</h1>
 
-  <div id="access-denied" class="hidden">
-    <p>You do not have permission to access this page.</p>
-  </div>
-
-  <div id="admin-panel" class="hidden">
-    <h2>Pending Member Approvals</h2>
-    <ul id="pending-users"></ul>
-
-    <h2>Approved Members</h2>
-    <ul id="approved-users"></ul>
-
+  <div id="admin-controls" class="hidden">
     <div class="section">
-      <h2>Create New Chatroom</h2>
-      <input type="text" id="new-chatroom-name" placeholder="Chatroom Name" />
-      <button onclick="createChatroom()">Create Chatroom</button>
+      <h2>Approve or Delete Users</h2>
+      <ul id="users-list"></ul>
     </div>
 
     <div class="section">
-      <h2>Existing Chatrooms</h2>
-      <ul id="chatroom-list"></ul>
+      <h2>Manage Chatrooms</h2>
+      <input type="text" id="new-chatroom-name" placeholder="New chatroom name" />
+      <button id="create-chatroom-button">Create Chatroom</button>
+      <ul id="chatrooms-list"></ul>
     </div>
   </div>
 
-  <script type="module" src="scripts/admin.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      doc,
+      updateDoc,
+      deleteDoc,
+      setDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCp94HHzIFiZh5kZREi7ZIVVL67IMnHEXw",
+      authDomain: "ymf-messaging-platform.firebaseapp.com",
+      projectId: "ymf-messaging-platform",
+      storageBucket: "ymf-messaging-platform.firebasestorage.app",
+      messagingSenderId: "820655157281",
+      appId: "1:820655157281:web:9713621443c068abd73360"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const adminEmails = ["ian@ianchalkmusic.com", "sue.chalk@hotmail.co.uk"];
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user || !adminEmails.includes(user.email)) {
+        document.body.innerHTML = "<h2 style='text-align:center;color:red;'>Access denied: Admins only</h2>";
+        return;
+      }
+
+      // If here, user is authenticated and is an admin
+      document.getElementById("admin-controls").classList.remove("hidden");
+      loadUsers();
+      loadChatrooms();
+    });
+
+    async function loadUsers() {
+      const usersList = document.getElementById("users-list");
+      usersList.innerHTML = "";
+      const snapshot = await getDocs(collection(db, "users"));
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const li = document.createElement("li");
+        li.textContent = `${data.firstName} ${data.surname} (${data.email}) - Approved: ${data.approved}`;
+        const approveBtn = document.createElement("button");
+        approveBtn.textContent = "Approve";
+        approveBtn.onclick = async () => {
+          await updateDoc(doc(db, "users", docSnap.id), { approved: true });
+          loadUsers();
+        };
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Delete";
+        deleteBtn.onclick = async () => {
+          await deleteDoc(doc(db, "users", docSnap.id));
+          loadUsers();
+        };
+        li.appendChild(approveBtn);
+        li.appendChild(deleteBtn);
+        usersList.appendChild(li);
+      });
+    }
+
+    async function loadChatrooms() {
+      const chatroomsList = document.getElementById("chatrooms-list");
+      chatroomsList.innerHTML = "";
+      const snapshot = await getDocs(collection(db, "chatrooms"));
+      snapshot.forEach(docSnap => {
+        const li = document.createElement("li");
+        li.textContent = docSnap.id;
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Delete";
+        deleteBtn.onclick = async () => {
+          await deleteDoc(doc(db, "chatrooms", docSnap.id));
+          loadChatrooms();
+        };
+        li.appendChild(deleteBtn);
+        chatroomsList.appendChild(li);
+      });
+    }
+
+    document.getElementById("create-chatroom-button").addEventListener("click", async () => {
+      const newRoom = document.getElementById("new-chatroom-name").value.trim();
+      if (newRoom) {
+        await setDoc(doc(db, "chatrooms", newRoom), {});
+        document.getElementById("new-chatroom-name").value = "";
+        loadChatrooms();
+      }
+    });
+  </script>
 </body>
 </html>
