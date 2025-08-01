@@ -1,174 +1,119 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getAuth,
-  onAuthStateChanged,
-  signOut
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {
-  getFirestore,
-  collection,
-  getDocs,
-  doc,
-  updateDoc,
-  deleteDoc,
-  setDoc,
-  addDoc
+  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
+  collection, getDocs, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getAuth, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCp94HHzIFiZh5kZREi7ZIVVL67IMnHEXw",
   authDomain: "ymf-messaging-platform.firebaseapp.com",
   projectId: "ymf-messaging-platform",
-  storageBucket: "ymf-messaging-platform.firebasestorage.app",
+  storageBucket: "ymf-messaging-platform.appspot.com",
   messagingSenderId: "820655157281",
   appId: "1:820655157281:web:9713621443c068abd73360"
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth();
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 const adminEmails = ["ian@ianchalkmusic.com", "sue.chalk@hotmail.co.uk"];
 
-const approvedList = document.getElementById("approved-members");
-const pendingList = document.getElementById("pending-members");
+const userList = document.getElementById("user-list");
+const approvedList = document.getElementById("approved-list");
 const chatroomList = document.getElementById("chatroom-list");
-const newRoomInput = document.getElementById("new-room-name");
-const addRoomButton = document.getElementById("add-room-button");
+const chatroomForm = document.getElementById("chatroom-form");
 
-onAuthStateChanged(auth, async (user) => {
-  if (!user || !adminEmails.includes(user.email)) {
-    document.body.innerHTML = "<h2>Access denied: Admins only</h2>";
-    return;
-  }
-
-  loadUsers();
-  loadChatrooms();
-});
-
-async function loadUsers() {
+function renderUsers() {
+  userList.innerHTML = "";
   approvedList.innerHTML = "";
-  pendingList.innerHTML = "";
+  getDocs(collection(db, "users")).then(snapshot => {
+    snapshot.forEach(docSnap => {
+      const user = docSnap.data();
+      const li = document.createElement("li");
+      li.textContent = `${user.firstName} ${user.lastName} (${user.email})`;
+      const approveBtn = document.createElement("button");
+      approveBtn.textContent = "Approve";
+      approveBtn.onclick = () => updateDoc(doc(db, "users", docSnap.id), { approved: true });
 
-  const querySnapshot = await getDocs(collection(db, "users"));
-  querySnapshot.forEach((docSnap) => {
-    const user = docSnap.data();
-    const li = document.createElement("li");
-    li.textContent = `${user.firstName} ${user.lastName} (${user.email})`;
+      const removeBtn = document.createElement("button");
+      removeBtn.textContent = "Remove";
+      removeBtn.onclick = () => deleteDoc(doc(db, "users", docSnap.id));
 
-    const approveBtn = document.createElement("button");
-    approveBtn.textContent = "Approve";
-    approveBtn.onclick = async () => {
-      await updateDoc(doc(db, "users", docSnap.id), {
-        approved: true
-      });
-      loadUsers();
-    };
-
-    if (user.approved) {
-      approvedList.appendChild(li);
-    } else {
-      li.appendChild(approveBtn);
-      pendingList.appendChild(li);
-    }
-  });
-}
-
-async function loadChatrooms() {
-  chatroomList.innerHTML = "";
-  const querySnapshot = await getDocs(collection(db, "chatrooms"));
-
-  querySnapshot.forEach((docSnap) => {
-    const room = docSnap.data();
-    const div = document.createElement("div");
-    const name = document.createElement("strong");
-    name.textContent = room.name;
-
-    const deleteBtn = document.createElement("button");
-    deleteBtn.textContent = "Delete";
-    deleteBtn.onclick = async () => {
-      await deleteDoc(doc(db, "chatrooms", docSnap.id));
-      loadChatrooms();
-    };
-
-    const renameBtn = document.createElement("button");
-    renameBtn.textContent = "Rename";
-    renameBtn.onclick = async () => {
-      const newName = prompt("Enter new name for this chatroom:", room.name);
-      if (newName) {
-        await updateDoc(doc(db, "chatrooms", docSnap.id), {
-          name: newName
-        });
-        loadChatrooms();
+      if (user.approved) {
+        approvedList.appendChild(li);
+        li.appendChild(removeBtn);
+      } else {
+        userList.appendChild(li);
+        li.appendChild(approveBtn);
       }
-    };
-
-    const manageMembersBtn = document.createElement("button");
-    manageMembersBtn.textContent = "Manage Members";
-    manageMembersBtn.onclick = () => manageMembers(docSnap.id);
-
-    div.appendChild(name);
-    div.appendChild(deleteBtn);
-    div.appendChild(renameBtn);
-    div.appendChild(manageMembersBtn);
-    chatroomList.appendChild(div);
+    });
   });
 }
 
-addRoomButton.onclick = async () => {
-  const name = newRoomInput.value.trim();
-  if (name) {
-    await addDoc(collection(db, "chatrooms"), {
-      name,
-      members: []
+function renderChatrooms() {
+  chatroomList.innerHTML = "";
+  getDocs(collection(db, "chatrooms")).then(snapshot => {
+    snapshot.forEach(docSnap => {
+      const room = docSnap.id;
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <strong>${room}</strong>
+        <button onclick="deleteChatroom('${room}')">Delete</button>
+        <button onclick="renameChatroomPrompt('${room}')">Rename</button>
+      `;
+      chatroomList.appendChild(li);
     });
-    newRoomInput.value = "";
-    loadChatrooms();
+  });
+}
+
+window.deleteChatroom = async function (room) {
+  await deleteDoc(doc(db, "chatrooms", room));
+  renderChatrooms();
+};
+
+window.renameChatroomPrompt = function (room) {
+  const newName = prompt("Enter new name for chatroom:");
+  if (newName) {
+    renameChatroom(room, newName);
   }
 };
 
-async function manageMembers(chatroomId) {
-  const usersSnapshot = await getDocs(collection(db, "users"));
-  const roomRef = doc(db, "chatrooms", chatroomId);
-  const roomSnap = await getDocs(collection(db, "chatrooms"));
-  let roomDoc;
-  roomSnap.forEach(doc => {
-    if (doc.id === chatroomId) {
-      roomDoc = doc;
-    }
-  });
-
-  if (!roomDoc) return;
-
-  const currentMembers = roomDoc.data().members || [];
-
-  const memberControls = document.createElement("div");
-  memberControls.innerHTML = `<h4>Manage Members for ${roomDoc.data().name}</h4>`;
-
-  usersSnapshot.forEach((userSnap) => {
-    const user = userSnap.data();
-    const line = document.createElement("div");
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.checked = currentMembers.includes(user.email);
-    checkbox.onchange = async () => {
-      const updatedMembers = checkbox.checked
-        ? [...currentMembers, user.email]
-        : currentMembers.filter(email => email !== user.email);
-
-      await updateDoc(roomRef, { members: updatedMembers });
-    };
-    line.appendChild(checkbox);
-    line.append(`${user.firstName} ${user.lastName} (${user.email})`);
-    memberControls.appendChild(line);
-  });
-
-  const panel = document.createElement("div");
-  panel.style.background = "#f0f0f0";
-  panel.style.padding = "10px";
-  panel.style.marginTop = "10px";
-  panel.style.border = "1px solid #ccc";
-  panel.appendChild(memberControls);
-
-  chatroomList.appendChild(panel);
+async function renameChatroom(oldName, newName) {
+  const oldDoc = await getDoc(doc(db, "chatrooms", oldName));
+  if (oldDoc.exists()) {
+    const data = oldDoc.data();
+    await setDoc(doc(db, "chatrooms", newName), data);
+    await deleteDoc(doc(db, "chatrooms", oldName));
+    renderChatrooms();
+  }
 }
+
+chatroomForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const roomName = document.getElementById("new-chatroom-name").value.trim();
+  if (roomName) {
+    await setDoc(doc(db, "chatrooms", roomName), { created: new Date() });
+    renderChatrooms();
+    chatroomForm.reset();
+  }
+});
+
+onAuthStateChanged(auth, async (user) => {
+  if (user && adminEmails.includes(user.email)) {
+    document.getElementById("admin-panel").style.display = "block";
+    renderUsers();
+    renderChatrooms();
+  } else {
+    document.body.innerHTML = "<h2>Access Denied: Admins only.</h2>";
+  }
+});
+
+document.getElementById("logout-button").onclick = () => {
+  signOut(auth).then(() => {
+    window.location.href = "index.html";
+  });
+};
