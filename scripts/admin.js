@@ -1,101 +1,174 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getAuth,
   onAuthStateChanged,
   signOut
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore,
   collection,
   getDocs,
-  deleteDoc,
   doc,
-  updateDoc
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  updateDoc,
+  deleteDoc,
+  setDoc,
+  addDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// Your Firebase config (replace with your actual config)
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCp94HHzIFiZh5kZREi7ZIVVL67IMnHEXw",
+  authDomain: "ymf-messaging-platform.firebaseapp.com",
+  projectId: "ymf-messaging-platform",
+  storageBucket: "ymf-messaging-platform.firebasestorage.app",
+  messagingSenderId: "820655157281",
+  appId: "1:820655157281:web:9713621443c068abd73360"
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+const auth = getAuth();
 const db = getFirestore(app);
 
-const approvedEmails = ["ian@ianchalkmusic.com", "sue.chalk@hotmail.co.uk"];
+const adminEmails = ["ian@ianchalkmusic.com", "sue.chalk@hotmail.co.uk"];
 
-const membersTable = document.getElementById("members-table");
-const chatroomsTable = document.getElementById("chatrooms-table");
+const approvedList = document.getElementById("approved-members");
+const pendingList = document.getElementById("pending-members");
+const chatroomList = document.getElementById("chatroom-list");
+const newRoomInput = document.getElementById("new-room-name");
+const addRoomButton = document.getElementById("add-room-button");
 
-// Auth check
 onAuthStateChanged(auth, async (user) => {
-  if (!user || !approvedEmails.includes(user.email)) {
-    alert("Access denied: Admins only");
-    window.location.href = "index.html";
+  if (!user || !adminEmails.includes(user.email)) {
+    document.body.innerHTML = "<h2>Access denied: Admins only</h2>";
     return;
   }
 
-  document.getElementById("admin-email").textContent = user.email;
-
-  loadMembers();
+  loadUsers();
   loadChatrooms();
 });
 
-async function loadMembers() {
-  membersTable.innerHTML = "";
-  const querySnapshot = await getDocs(collection(db, "members"));
+async function loadUsers() {
+  approvedList.innerHTML = "";
+  pendingList.innerHTML = "";
+
+  const querySnapshot = await getDocs(collection(db, "users"));
   querySnapshot.forEach((docSnap) => {
-    const data = docSnap.data();
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${data.fullName || ""}</td>
-      <td>${data.email}</td>
-      <td>${data.approved ? "Yes" : "No"}</td>
-      <td>
-        ${!data.approved ? `<button onclick="approveMember('${docSnap.id}')">Approve</button>` : ""}
-        <button onclick="deleteMember('${docSnap.id}')">Delete</button>
-      </td>
-    `;
-    membersTable.appendChild(row);
-  });
-}
+    const user = docSnap.data();
+    const li = document.createElement("li");
+    li.textContent = `${user.firstName} ${user.lastName} (${user.email})`;
 
-async function approveMember(id) {
-  await updateDoc(doc(db, "members", id), {
-    approved: true
-  });
-  loadMembers();
-}
+    const approveBtn = document.createElement("button");
+    approveBtn.textContent = "Approve";
+    approveBtn.onclick = async () => {
+      await updateDoc(doc(db, "users", docSnap.id), {
+        approved: true
+      });
+      loadUsers();
+    };
 
-async function deleteMember(id) {
-  await deleteDoc(doc(db, "members", id));
-  loadMembers();
+    if (user.approved) {
+      approvedList.appendChild(li);
+    } else {
+      li.appendChild(approveBtn);
+      pendingList.appendChild(li);
+    }
+  });
 }
 
 async function loadChatrooms() {
-  chatroomsTable.innerHTML = "";
+  chatroomList.innerHTML = "";
   const querySnapshot = await getDocs(collection(db, "chatrooms"));
+
   querySnapshot.forEach((docSnap) => {
-    const data = docSnap.data();
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${docSnap.id}</td>
-      <td><button onclick="deleteChatroom('${docSnap.id}')">Delete</button></td>
-    `;
-    chatroomsTable.appendChild(row);
+    const room = docSnap.data();
+    const div = document.createElement("div");
+    const name = document.createElement("strong");
+    name.textContent = room.name;
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "Delete";
+    deleteBtn.onclick = async () => {
+      await deleteDoc(doc(db, "chatrooms", docSnap.id));
+      loadChatrooms();
+    };
+
+    const renameBtn = document.createElement("button");
+    renameBtn.textContent = "Rename";
+    renameBtn.onclick = async () => {
+      const newName = prompt("Enter new name for this chatroom:", room.name);
+      if (newName) {
+        await updateDoc(doc(db, "chatrooms", docSnap.id), {
+          name: newName
+        });
+        loadChatrooms();
+      }
+    };
+
+    const manageMembersBtn = document.createElement("button");
+    manageMembersBtn.textContent = "Manage Members";
+    manageMembersBtn.onclick = () => manageMembers(docSnap.id);
+
+    div.appendChild(name);
+    div.appendChild(deleteBtn);
+    div.appendChild(renameBtn);
+    div.appendChild(manageMembersBtn);
+    chatroomList.appendChild(div);
   });
 }
 
-async function deleteChatroom(roomId) {
-  await deleteDoc(doc(db, "chatrooms", roomId));
-  loadChatrooms();
-}
+addRoomButton.onclick = async () => {
+  const name = newRoomInput.value.trim();
+  if (name) {
+    await addDoc(collection(db, "chatrooms"), {
+      name,
+      members: []
+    });
+    newRoomInput.value = "";
+    loadChatrooms();
+  }
+};
 
-window.approveMember = approveMember;
-window.deleteMember = deleteMember;
-window.deleteChatroom = deleteChatroom;
+async function manageMembers(chatroomId) {
+  const usersSnapshot = await getDocs(collection(db, "users"));
+  const roomRef = doc(db, "chatrooms", chatroomId);
+  const roomSnap = await getDocs(collection(db, "chatrooms"));
+  let roomDoc;
+  roomSnap.forEach(doc => {
+    if (doc.id === chatroomId) {
+      roomDoc = doc;
+    }
+  });
+
+  if (!roomDoc) return;
+
+  const currentMembers = roomDoc.data().members || [];
+
+  const memberControls = document.createElement("div");
+  memberControls.innerHTML = `<h4>Manage Members for ${roomDoc.data().name}</h4>`;
+
+  usersSnapshot.forEach((userSnap) => {
+    const user = userSnap.data();
+    const line = document.createElement("div");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = currentMembers.includes(user.email);
+    checkbox.onchange = async () => {
+      const updatedMembers = checkbox.checked
+        ? [...currentMembers, user.email]
+        : currentMembers.filter(email => email !== user.email);
+
+      await updateDoc(roomRef, { members: updatedMembers });
+    };
+    line.appendChild(checkbox);
+    line.append(`${user.firstName} ${user.lastName} (${user.email})`);
+    memberControls.appendChild(line);
+  });
+
+  const panel = document.createElement("div");
+  panel.style.background = "#f0f0f0";
+  panel.style.padding = "10px";
+  panel.style.marginTop = "10px";
+  panel.style.border = "1px solid #ccc";
+  panel.appendChild(memberControls);
+
+  chatroomList.appendChild(panel);
+}
