@@ -1,26 +1,3 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  createUserWithEmailAndPassword,
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  setDoc,
-  collection,
-  addDoc,
-  serverTimestamp,
-  query,
-  orderBy,
-  onSnapshot,
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-// Your Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyCp94HHzIFiZh5kZREi7ZIVVL67IMnHEXw",
   authDomain: "ymf-messaging-platform.firebaseapp.com",
@@ -30,176 +7,156 @@ const firebaseConfig = {
   appId: "1:820655157281:web:9713621443c068abd73360",
 };
 
-// Init Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 
-// DOM elements
+// UI references
 const loginArea = document.getElementById("login-area");
 const signupArea = document.getElementById("signup-area");
 const welcomeArea = document.getElementById("welcome-area");
-const userEmailDisplay = document.getElementById("user-email");
 const chatroomList = document.getElementById("chatroom-list");
 const chatroom = document.getElementById("chatroom");
-const roomTitle = document.getElementById("room-title");
-const messagesContainer = document.getElementById("messages");
-const messageInput = document.getElementById("message-input");
-const sendMessageButton = document.getElementById("send-message");
 
-// Show/hide helpers
-function show(id) {
-  document.getElementById(id).classList.remove("hidden");
-}
-function hide(id) {
-  document.getElementById(id).classList.add("hidden");
-}
+const userEmailSpan = document.getElementById("user-email");
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
 
-// Signup link logic
+const signupFirstName = document.getElementById("signup-first-name");
+const signupSurname = document.getElementById("signup-surname");
+const signupEmail = document.getElementById("signup-email");
+const signupPassword = document.getElementById("signup-password");
+
 const goToSignupBtn = document.getElementById("go-to-signup");
-if (goToSignupBtn) {
-  goToSignupBtn.addEventListener("click", () => {
-    hide("login-area");
-    show("signup-area");
-  });
-}
+const signupBtn = document.getElementById("signup-button");
 
-// Signup function
-const signupButton = document.getElementById("signup-button");
-if (signupButton) {
-  signupButton.addEventListener("click", async () => {
-    const email = document.getElementById("signup-email").value;
-    const password = document.getElementById("signup-password").value;
-    const firstName = document.getElementById("signup-first-name").value;
-    const surname = document.getElementById("signup-surname").value;
+// Show signup page
+goToSignupBtn.addEventListener("click", () => {
+  loginArea.classList.add("hidden");
+  signupArea.classList.remove("hidden");
+});
 
-    try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const uid = userCredential.user.uid;
+// Signup logic
+signupBtn.addEventListener("click", () => {
+  const firstName = signupFirstName.value.trim();
+  const surname = signupSurname.value.trim();
+  const email = signupEmail.value.trim();
+  const password = signupPassword.value;
 
-      await setDoc(doc(db, "users", uid), {
-        email,
-        firstName,
-        surname,
-        approved: false, // require admin approval
-      });
+  if (!firstName || !surname || !email || !password) {
+    alert("Please fill in all signup fields.");
+    return;
+  }
 
-      alert("Signup successful! Awaiting approval.");
-      hide("signup-area");
-      show("login-area");
-    } catch (error) {
-      alert("Error signing up: " + error.message);
-    }
-  });
-}
+  auth
+    .createUserWithEmailAndPassword(email, password)
+    .then(() => {
+      alert("Signup successful! Await admin approval before login.");
+      signupArea.classList.add("hidden");
+      loginArea.classList.remove("hidden");
+
+      signupFirstName.value = "";
+      signupSurname.value = "";
+      signupEmail.value = "";
+      signupPassword.value = "";
+    })
+    .catch((error) => {
+      alert("Signup error: " + error.message);
+    });
+});
 
 // Login function
-async function login() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+window.login = function () {
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
 
-  try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const uid = userCredential.user.uid;
-    const userDoc = await getDoc(doc(db, "users", uid));
-
-    if (!userDoc.exists()) {
-      alert("No user record found.");
-      return;
-    }
-
-    const userData = userDoc.data();
-    if (!userData.approved) {
-      alert("Your account is pending approval by an admin.");
-      return;
-    }
-
-    // Show user info
-    userEmailDisplay.textContent = email;
-    show("welcome-area");
-    show("chatroom-list");
-    hide("login-area");
-    hide("signup-area");
-
-    // Redirect admin
-    if (
-      email === "ian@ianchalkmusic.com" ||
-      email === "sue.chalk@hotmail.co.uk"
-    ) {
-      const adminLink = document.createElement("a");
-      adminLink.href = "admin.html";
-      adminLink.textContent = "Go to Admin Page";
-      adminLink.style.display = "block";
-      adminLink.style.marginTop = "10px";
-      welcomeArea.appendChild(adminLink);
-    }
-  } catch (error) {
-    alert("Login failed: " + error.message);
+  if (!email || !password) {
+    alert("Please enter email and password.");
+    return;
   }
-}
+
+  auth
+    .signInWithEmailAndPassword(email, password)
+    .catch((error) => {
+      alert("Login error: " + error.message);
+    });
+};
 
 // Logout function
-async function logout() {
-  await signOut(auth);
-  show("login-area");
-  hide("welcome-area");
-  hide("chatroom-list");
-  hide("chatroom");
-  userEmailDisplay.textContent = "";
+window.logout = function () {
+  auth.signOut();
+};
+
+// Remove admin link helper
+function removeAdminLink() {
+  const existing = document.getElementById("admin-link");
+  if (existing) existing.remove();
 }
 
-// Attach login/logout listeners
-document.getElementById("login-button").addEventListener("click", login);
-document.getElementById("logout-button").addEventListener("click", logout);
+// Auth state change handler
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    const email = user.email;
 
-// Chatroom selection
-chatroomList.addEventListener("click", (e) => {
-  if (e.target.classList.contains("chatroom-button")) {
-    const room = e.target.dataset.room;
-    openChatroom(room);
+    loginArea.classList.add("hidden");
+    signupArea.classList.add("hidden");
+    welcomeArea.classList.remove("hidden");
+    chatroomList.classList.remove("hidden");
+    chatroom.classList.add("hidden");
+
+    userEmailSpan.textContent = email;
+
+    if (email === "ian@ianchalkmusic.com" || email === "sue.chalk@hotmail.co.uk") {
+      if (!document.getElementById("admin-link")) {
+        const adminLink = document.createElement("a");
+        adminLink.id = "admin-link";
+        adminLink.href = "admin.html";
+        adminLink.textContent = "Go to Admin Page";
+        adminLink.style.display = "block";
+        adminLink.style.marginTop = "10px";
+        welcomeArea.appendChild(adminLink);
+      }
+    } else {
+      removeAdminLink();
+    }
+  } else {
+    removeAdminLink();
+    welcomeArea.classList.add("hidden");
+    chatroomList.classList.add("hidden");
+    chatroom.classList.add("hidden");
+    loginArea.classList.remove("hidden");
+
+    emailInput.value = "";
+    passwordInput.value = "";
   }
 });
 
-// Open chatroom
+// Chatroom UI
+const chatroomButtons = document.querySelectorAll(".chatroom-button");
+const roomTitle = document.getElementById("room-title");
+const messagesDiv = document.getElementById("messages");
+const messageInput = document.getElementById("message-input");
+const sendMessageBtn = document.getElementById("send-message");
+
 let currentRoom = null;
-let unsubscribeMessages = null;
 
-async function openChatroom(room) {
-  currentRoom = room;
-  roomTitle.textContent = room.charAt(0).toUpperCase() + room.slice(1);
-  show("chatroom");
-  hide("chatroom-list");
-  messagesContainer.innerHTML = "";
-
-  const messagesQuery = query(
-    collection(db, "chatrooms", room, "messages"),
-    orderBy("timestamp")
-  );
-
-  if (unsubscribeMessages) {
-    unsubscribeMessages();
-  }
-
-  unsubscribeMessages = onSnapshot(messagesQuery, (snapshot) => {
-    messagesContainer.innerHTML = "";
-    snapshot.forEach((doc) => {
-      const msg = doc.data();
-      const msgDiv = document.createElement("div");
-      msgDiv.textContent = `${msg.sender}: ${msg.text}`;
-      messagesContainer.appendChild(msgDiv);
-    });
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+chatroomButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    currentRoom = btn.getAttribute("data-room");
+    openChatroom(currentRoom);
   });
+});
+
+function openChatroom(room) {
+  chatroomList.classList.add("hidden");
+  chatroom.classList.remove("hidden");
+  roomTitle.textContent = "Chatroom: " + room.charAt(0).toUpperCase() + room.slice(1);
+  messagesDiv.innerHTML = `<p>Welcome to the ${room} chatroom!</p>`;
 }
 
-// Send message
-sendMessageButton.addEventListener("click", async () => {
-  const text = messageInput.value.trim();
-  if (!text) return;
+sendMessageBtn.addEventListener("click", () => {
+  const msg = messageInput.value.trim();
+  if (msg === "") return;
 
   const user = auth.currentUser;
   if (!user) {
@@ -207,49 +164,16 @@ sendMessageButton.addEventListener("click", async () => {
     return;
   }
 
-  try {
-    await addDoc(collection(db, "chatrooms", currentRoom, "messages"), {
-      sender: user.email,
-      text,
-      timestamp: serverTimestamp(),
-    });
-    messageInput.value = "";
-  } catch (error) {
-    alert("Error sending message: " + error.message);
-  }
+  const messageElement = document.createElement("p");
+  messageElement.textContent = `${user.email}: ${msg}`;
+  messagesDiv.appendChild(messageElement);
+  messageInput.value = "";
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
 });
 
-// Return to chatroom list
 window.goBack = function () {
-  if (unsubscribeMessages) {
-    unsubscribeMessages();
-    unsubscribeMessages = null;
-  }
+  chatroom.classList.add("hidden");
+  chatroomList.classList.remove("hidden");
+  messagesDiv.innerHTML = "";
   currentRoom = null;
-  hide("chatroom");
-  show("chatroom-list");
 };
-
-// Track auth state
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    // Check if approved
-    getDoc(doc(db, "users", user.uid)).then((userDoc) => {
-      if (!userDoc.exists() || !userDoc.data().approved) {
-        logout();
-        alert("Your account is pending approval by an admin.");
-      } else {
-        userEmailDisplay.textContent = user.email;
-        show("welcome-area");
-        show("chatroom-list");
-        hide("login-area");
-        hide("signup-area");
-      }
-    });
-  } else {
-    show("login-area");
-    hide("welcome-area");
-    hide("chatroom-list");
-    hide("chatroom");
-  }
-});
