@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>YMF Messaging Platform</title>
   <link href="https://fonts.googleapis.com/css2?family=AbeeZee&family=Muli&display=swap" rel="stylesheet" />
   <style>
@@ -59,6 +59,16 @@
     button:hover {
       background-color: #a61b65;
     }
+    a#admin-link {
+      color: #8b1453;
+      font-weight: bold;
+      display: block;
+      margin-top: 10px;
+      text-decoration: none;
+    }
+    a#admin-link:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -71,7 +81,7 @@
     <h2>Login</h2>
     <input type="email" id="email" placeholder="Email" />
     <input type="password" id="password" placeholder="Password" />
-    <button id="login-button">Login</button>
+    <button onclick="login()">Login</button>
     <button id="go-to-signup">Go to Sign Up</button>
   </div>
 
@@ -86,7 +96,7 @@
 
   <div id="welcome-area" class="container hidden">
     <h2>Welcome <span id="user-email"></span></h2>
-    <button id="logout-button">Logout</button>
+    <button onclick="logout()">Logout</button>
   </div>
 
   <div id="chatroom-list" class="container hidden">
@@ -107,6 +117,11 @@
     <button onclick="goBack()">Return to Chatrooms</button>
   </div>
 
-  <script type="module" src="scripts/app.js"></script>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+  <!-- Your app script -->
+  <script src="scripts/app.js"></script>
 </body>
 </html>
