@@ -4,97 +4,127 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>YMF Messaging Platform</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Abeezee&family=Muli&display=swap" rel="stylesheet" />
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Abeezee&family=Muli&display=swap');
   body {
     font-family: 'Muli', sans-serif;
     background: #fff;
     color: #000;
-    margin: 0; padding: 20px;
+    margin: 0;
+    padding: 0;
   }
-  h1, h2 {
+  header {
+    background-color: #8b1453;
+    color: white;
+    padding: 1rem;
     font-family: 'Abeezee', serif;
-    color: #8b1453;
+    font-size: 1.5rem;
+    text-align: center;
+  }
+  .container {
+    max-width: 600px;
+    margin: 1rem auto;
+    padding: 1rem;
+  }
+  input, button, select {
+    font-family: 'Muli', sans-serif;
+    font-size: 1rem;
+    padding: 0.5rem;
+    margin: 0.25rem 0;
+    width: 100%;
+    box-sizing: border-box;
   }
   button {
     background-color: #8b1453;
     color: white;
     border: none;
-    padding: 8px 12px;
-    margin: 4px 0;
     cursor: pointer;
-    border-radius: 4px;
-    font-size: 1rem;
   }
-  input[type="email"], input[type="password"], input[type="text"] {
-    width: 100%;
-    padding: 6px;
-    margin: 4px 0 12px 0;
-    box-sizing: border-box;
-    font-size: 1rem;
+  button:hover {
+    background-color: #6f0f42;
   }
-  .hidden { display: none; }
-  #errorMessage { color: red; }
-  #chatroomsList button {
-    display: block;
+  .hidden {
+    display: none;
+  }
+  .error {
+    color: red;
+    margin: 0.5rem 0;
+  }
+  nav {
+    margin: 1rem 0;
+    text-align: center;
+  }
+  nav button {
+    width: auto;
+    margin: 0 0.5rem;
+  }
+  .chatroom-list button {
+    margin: 0.25rem 0;
     width: 100%;
     text-align: left;
-    margin: 6px 0;
-  }
-  #logoutBtn {
-    margin-top: 20px;
-  }
-  #switchFormsBtn {
-    background: none;
-    border: none;
-    color: #8b1453;
-    cursor: pointer;
-    font-size: 0.9rem;
-    margin-top: 10px;
-    text-decoration: underline;
   }
 </style>
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
-<h1>YMF Messaging Platform</h1>
+<header>York Music Forum Messaging Platform</header>
 
-<!-- Sign In Form -->
-<div id="signInForm">
-  <h2>Sign In</h2>
-  <label for="signinEmail">Email:</label>
-  <input type="email" id="signinEmail" required autocomplete="username" />
-  <label for="signinPassword">Password:</label>
-  <input type="password" id="signinPassword" required autocomplete="current-password" />
-  <button id="signInBtn">Sign In</button>
-  <div id="signInError" style="color:red;"></div>
-  <button id="switchToSignUpBtn" type="button">New user? Sign Up here</button>
+<div class="container">
+
+  <!-- NAVIGATION -->
+  <nav id="nav-auth">
+    <button id="show-signin-btn">Sign In</button>
+    <button id="show-signup-btn">Sign Up</button>
+  </nav>
+
+  <nav id="nav-signedin" class="hidden">
+    <button id="btn-signout">Sign Out</button>
+    <button id="btn-go-admin" class="hidden">Admin Panel</button>
+  </nav>
+
+  <!-- SIGN UP FORM -->
+  <section id="signup-section" class="hidden">
+    <h2>Sign Up</h2>
+    <div class="error" id="signup-error"></div>
+    <input type="text" id="signup-name" placeholder="Full Name" required />
+    <input type="email" id="signup-email" placeholder="Email" required />
+    <input type="password" id="signup-password" placeholder="Password" required />
+    <button id="signup-submit">Register</button>
+  </section>
+
+  <!-- SIGN IN FORM -->
+  <section id="signin-section" class="hidden">
+    <h2>Sign In</h2>
+    <div class="error" id="signin-error"></div>
+    <input type="email" id="signin-email" placeholder="Email" required />
+    <input type="password" id="signin-password" placeholder="Password" required />
+    <button id="signin-submit">Sign In</button>
+  </section>
+
+  <!-- MAIN CHATROOMS LIST -->
+  <section id="chatrooms-section" class="hidden">
+    <h2>Chatrooms</h2>
+    <div class="chatroom-list" id="chatroom-list"></div>
+    <p id="no-chatrooms-msg" class="hidden">No chatrooms assigned.</p>
+  </section>
+
+  <!-- CHATROOM MESSAGES SECTION -->
+  <section id="messages-section" class="hidden">
+    <h2 id="chatroom-title"></h2>
+    <div id="messages-container" style="border:1px solid #ccc; height: 300px; overflow-y: auto; padding:0.5rem; margin-bottom:1rem;"></div>
+    <textarea id="message-input" placeholder="Type your message here..." rows="3"></textarea>
+    <button id="send-message-btn">Send Message</button>
+    <button id="btn-back-to-chatrooms">Return to Chatrooms</button>
+  </section>
+
 </div>
-
-<!-- Sign Up Form -->
-<div id="signUpForm" class="hidden">
-  <h2>Sign Up</h2>
-  <label for="signupEmail">Email:</label>
-  <input type="email" id="signupEmail" required autocomplete="username" />
-  <label for="signupPassword">Password:</label>
-  <input type="password" id="signupPassword" required autocomplete="new-password" />
-  <button id="signUpBtn">Sign Up</button>
-  <div id="signUpError" style="color:red;"></div>
-  <button id="switchToSignInBtn" type="button">Already have an account? Sign In here</button>
-</div>
-
-<!-- Chatrooms List -->
-<div id="chatroomsSection" class="hidden">
-  <h2>Your Chatrooms</h2>
-  <div id="chatroomsList"></div>
-  <button id="logoutBtn">Log Out</button>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
-  // Firebase config - replace with your config
+  // Initialize Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyCp94HHzIFiZh5kZREi7ZIVVL67IMnHEXw",
     authDomain: "ymf-messaging-platform.firebaseapp.com",
@@ -106,207 +136,280 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  // Utility: SHA-256 hashing function
-  async function sha256(message) {
-    const msgBuffer = new TextEncoder().encode(message);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  // UI Elements
+  const navAuth = document.getElementById('nav-auth');
+  const navSignedIn = document.getElementById('nav-signedin');
+  const btnSignOut = document.getElementById('btn-signout');
+  const btnGoAdmin = document.getElementById('btn-go-admin');
+
+  const signupSection = document.getElementById('signup-section');
+  const signinSection = document.getElementById('signin-section');
+  const chatroomsSection = document.getElementById('chatrooms-section');
+  const messagesSection = document.getElementById('messages-section');
+
+  const signupError = document.getElementById('signup-error');
+  const signinError = document.getElementById('signin-error');
+
+  const signupName = document.getElementById('signup-name');
+  const signupEmail = document.getElementById('signup-email');
+  const signupPassword = document.getElementById('signup-password');
+  const signupSubmit = document.getElementById('signup-submit');
+
+  const signinEmail = document.getElementById('signin-email');
+  const signinPassword = document.getElementById('signin-password');
+  const signinSubmit = document.getElementById('signin-submit');
+
+  const chatroomList = document.getElementById('chatroom-list');
+  const noChatroomsMsg = document.getElementById('no-chatrooms-msg');
+
+  const chatroomTitle = document.getElementById('chatroom-title');
+  const messagesContainer = document.getElementById('messages-container');
+  const messageInput = document.getElementById('message-input');
+  const sendMessageBtn = document.getElementById('send-message-btn');
+  const btnBackToChatrooms = document.getElementById('btn-back-to-chatrooms');
+
+  const showSignInBtn = document.getElementById('show-signin-btn');
+  const showSignUpBtn = document.getElementById('show-signup-btn');
+
+  // Current user/session data
+  let currentUser = null;  // { id, name, email, approved, admin, chatrooms: [] }
+  let currentChatroom = null; // chatroom id
+
+  // Utility: Simple password hashing with btoa (for demo only, not secure)
+  function hashPassword(password) {
+    return btoa(password); // base64 encode as simple hash (replace with better hashing if needed)
   }
 
-  // Elements
-  const signInForm = document.getElementById('signInForm');
-  const signUpForm = document.getElementById('signUpForm');
-  const chatroomsSection = document.getElementById('chatroomsSection');
-
-  const signinEmailInput = document.getElementById('signinEmail');
-  const signinPasswordInput = document.getElementById('signinPassword');
-  const signInBtn = document.getElementById('signInBtn');
-  const signInError = document.getElementById('signInError');
-
-  const signupEmailInput = document.getElementById('signupEmail');
-  const signupPasswordInput = document.getElementById('signupPassword');
-  const signUpBtn = document.getElementById('signUpBtn');
-  const signUpError = document.getElementById('signUpError');
-
-  const switchToSignUpBtn = document.getElementById('switchToSignUpBtn');
-  const switchToSignInBtn = document.getElementById('switchToSignInBtn');
-
-  const chatroomsList = document.getElementById('chatroomsList');
-  const logoutBtn = document.getElementById('logoutBtn');
-
-  let currentUser = null; // Will hold the logged in user's doc data
-
-  // Show/hide helpers
-  function showSignIn() {
-    signInForm.classList.remove('hidden');
-    signUpForm.classList.add('hidden');
-    chatroomsSection.classList.add('hidden');
-    signInError.textContent = '';
-    signinEmailInput.value = '';
-    signinPasswordInput.value = '';
+  // Show/hide UI sections helper
+  function showSection(...sections) {
+    [signupSection, signinSection, chatroomsSection, messagesSection].forEach(s => s.classList.add('hidden'));
+    sections.forEach(s => s.classList.remove('hidden'));
   }
+
+  // Show auth nav or signed in nav
+  function updateNav() {
+    if (currentUser) {
+      navAuth.classList.add('hidden');
+      navSignedIn.classList.remove('hidden');
+      if (currentUser.admin) {
+        btnGoAdmin.classList.remove('hidden');
+      } else {
+        btnGoAdmin.classList.add('hidden');
+      }
+    } else {
+      navAuth.classList.remove('hidden');
+      navSignedIn.classList.add('hidden');
+      btnGoAdmin.classList.add('hidden');
+    }
+  }
+
+  // Clear errors
+  function clearErrors() {
+    signupError.textContent = '';
+    signinError.textContent = '';
+  }
+
+  // Show sign-up form
   function showSignUp() {
-    signUpForm.classList.remove('hidden');
-    signInForm.classList.add('hidden');
-    chatroomsSection.classList.add('hidden');
-    signUpError.textContent = '';
-    signupEmailInput.value = '';
-    signupPasswordInput.value = '';
-  }
-  function showChatrooms() {
-    signInForm.classList.add('hidden');
-    signUpForm.classList.add('hidden');
-    chatroomsSection.classList.remove('hidden');
+    clearErrors();
+    showSection(signupSection);
   }
 
-  // Save logged-in user email to localStorage for persistence
-  function saveSession(email) {
-    localStorage.setItem('ymfUserEmail', email);
-  }
-  function clearSession() {
-    localStorage.removeItem('ymfUserEmail');
-  }
-  function getSession() {
-    return localStorage.getItem('ymfUserEmail');
+  // Show sign-in form
+  function showSignIn() {
+    clearErrors();
+    showSection(signinSection);
   }
 
-  // Load user chatrooms after sign in
-  async function loadChatroomsForUser(userDoc) {
-    chatroomsList.innerHTML = '';
-    if (!userDoc.chatrooms || userDoc.chatrooms.length === 0) {
-      chatroomsList.innerHTML = '<p>You have no assigned chatrooms.</p>';
+  // Load chatrooms assigned to user
+  async function loadChatrooms() {
+    chatroomList.innerHTML = '';
+    noChatroomsMsg.classList.add('hidden');
+
+    if (!currentUser.chatrooms || currentUser.chatrooms.length === 0) {
+      noChatroomsMsg.classList.remove('hidden');
       return;
     }
-    // Get chatroom names from Firestore (chatrooms collection)
-    const chatroomPromises = userDoc.chatrooms.map(async chatroomId => {
-      const docSnap = await db.collection('chatrooms').doc(chatroomId).get();
-      if (docSnap.exists) return docSnap.data().name || 'Unnamed Chatroom';
-      else return 'Unknown Chatroom';
-    });
-    const chatroomNames = await Promise.all(chatroomPromises);
-    chatroomNames.forEach(name => {
-      const btn = document.createElement('button');
-      btn.textContent = name;
-      btn.disabled = true; // You can add chatroom join logic here later
-      chatroomsList.appendChild(btn);
-    });
+
+    for (const crId of currentUser.chatrooms) {
+      try {
+        const doc = await db.collection('chatrooms').doc(crId).get();
+        if (doc.exists) {
+          const cr = doc.data();
+          const btn = document.createElement('button');
+          btn.textContent = cr.name;
+          btn.onclick = () => openChatroom(crId, cr.name);
+          chatroomList.appendChild(btn);
+        }
+      } catch (e) {
+        console.error('Error loading chatroom:', e);
+      }
+    }
   }
 
-  // Check session on page load
-  async function checkSession() {
-    const email = getSession();
-    if (!email) {
+  // Open chatroom messages
+  function openChatroom(id, name) {
+    currentChatroom = id;
+    chatroomTitle.textContent = name;
+    messagesContainer.innerHTML = '';
+    showSection(messagesSection);
+    loadMessages();
+  }
+
+  // Load messages from Firestore for current chatroom
+  async function loadMessages() {
+    messagesContainer.innerHTML = 'Loading messages...';
+    try {
+      const snapshot = await db.collection('chatrooms').doc(currentChatroom).collection('messages').orderBy('timestamp').get();
+      messagesContainer.innerHTML = '';
+      snapshot.forEach(doc => {
+        const msg = doc.data();
+        const div = document.createElement('div');
+        div.textContent = `${msg.name}: ${msg.text}`;
+        messagesContainer.appendChild(div);
+      });
+      // Scroll to bottom
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    } catch (e) {
+      messagesContainer.innerHTML = 'Error loading messages.';
+      console.error(e);
+    }
+  }
+
+  // Send message to chatroom
+  async function sendMessage() {
+    const text = messageInput.value.trim();
+    if (!text) return;
+    if (!currentChatroom) return;
+    try {
+      await db.collection('chatrooms').doc(currentChatroom).collection('messages').add({
+        uid: currentUser.id,
+        name: currentUser.name,
+        text: text,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      messageInput.value = '';
+      loadMessages();
+    } catch (e) {
+      alert('Error sending message.');
+      console.error(e);
+    }
+  }
+
+  // Sign-up function
+  async function signUp() {
+    clearErrors();
+    const name = signupName.value.trim();
+    const email = signupEmail.value.trim().toLowerCase();
+    const password = signupPassword.value;
+
+    if (!name || !email || !password) {
+      signupError.textContent = 'Please fill in all fields.';
+      return;
+    }
+
+    try {
+      // Check if user exists
+      const existing = await db.collection('members').where('email', '==', email).get();
+      if (!existing.empty) {
+        signupError.textContent = 'Email already registered.';
+        return;
+      }
+
+      // Create user (approved = false by default, admin = false)
+      const hashed = hashPassword(password);
+      const newDoc = await db.collection('members').add({
+        name,
+        email,
+        password: hashed,
+        approved: false,
+        admin: false,
+        chatrooms: []
+      });
+
+      alert('Registered successfully! Your account must be approved by an admin before signing in.');
+      // Clear fields
+      signupName.value = '';
+      signupEmail.value = '';
+      signupPassword.value = '';
       showSignIn();
-      return;
+
+    } catch (e) {
+      signupError.textContent = 'Error during registration.';
+      console.error(e);
     }
-    // Get user from Firestore
-    const userSnap = await db.collection('members').doc(email).get();
-    if (!userSnap.exists) {
-      clearSession();
-      showSignIn();
-      return;
-    }
-    const userData = userSnap.data();
-    if (!userData.approved) {
-      clearSession();
-      showSignIn();
-      alert('Your account is not yet approved by admin.');
-      return;
-    }
-    currentUser = userData;
-    showChatrooms();
-    loadChatroomsForUser(currentUser);
   }
 
-  // Sign Up handler
-  signUpBtn.addEventListener('click', async () => {
-    const email = signupEmailInput.value.trim().toLowerCase();
-    const password = signupPasswordInput.value;
-    signUpError.textContent = '';
-
+  // Sign-in function
+  async function signIn() {
+    clearErrors();
+    const email = signinEmail.value.trim().toLowerCase();
+    const password = signinPassword.value;
     if (!email || !password) {
-      signUpError.textContent = 'Please enter email and password.';
+      signinError.textContent = 'Please enter email and password.';
       return;
     }
+    try {
+      const hashed = hashPassword(password);
+      const query = await db.collection('members').where('email', '==', email).where('password', '==', hashed).where('approved', '==', true).get();
 
-    // Check if member already exists
-    const userDoc = await db.collection('members').doc(email).get();
-    if (userDoc.exists) {
-      signUpError.textContent = 'Email already registered.';
-      return;
+      if (query.empty) {
+        signinError.textContent = 'No approved account found with this email/password.';
+        return;
+      }
+
+      // Should be exactly one
+      const userDoc = query.docs[0];
+      const userData = userDoc.data();
+      currentUser = {
+        id: userDoc.id,
+        name: userData.name,
+        email: userData.email,
+        approved: userData.approved,
+        admin: userData.admin,
+        chatrooms: userData.chatrooms || []
+      };
+
+      signinEmail.value = '';
+      signinPassword.value = '';
+
+      updateNav();
+      await loadChatrooms();
+      showSection(chatroomsSection);
+
+    } catch (e) {
+      signinError.textContent = 'Error signing in.';
+      console.error(e);
     }
+  }
 
-    // Hash password
-    const hashedPassword = await sha256(password);
-
-    // Create member with approved=false
-    await db.collection('members').doc(email).set({
-      email,
-      passwordHash: hashedPassword,
-      approved: false,
-      chatrooms: []
-    });
-
-    alert('Sign up successful! Await admin approval before signing in.');
-    showSignIn();
-  });
-
-  // Sign In handler
-  signInBtn.addEventListener('click', async () => {
-    const email = signinEmailInput.value.trim().toLowerCase();
-    const password = signinPasswordInput.value;
-    signInError.textContent = '';
-
-    if (!email || !password) {
-      signInError.textContent = 'Please enter email and password.';
-      return;
-    }
-
-    // Get member doc
-    const userDocSnap = await db.collection('members').doc(email).get();
-    if (!userDocSnap.exists) {
-      signInError.textContent = 'No account found with this email.';
-      return;
-    }
-    const userData = userDocSnap.data();
-
-    if (!userData.approved) {
-      signInError.textContent = 'Your account is not yet approved by admin.';
-      return;
-    }
-
-    // Hash entered password and compare
-    const hashedPassword = await sha256(password);
-    if (hashedPassword !== userData.passwordHash) {
-      signInError.textContent = 'Incorrect password.';
-      return;
-    }
-
-    currentUser = userData;
-    saveSession(email);
-    showChatrooms();
-    loadChatroomsForUser(currentUser);
-  });
-
-  // Logout handler
-  logoutBtn.addEventListener('click', () => {
-    clearSession();
+  // Sign-out function
+  function signOut() {
     currentUser = null;
+    currentChatroom = null;
+    updateNav();
     showSignIn();
-  });
+  }
 
-  // Switch between forms
-  switchToSignUpBtn.addEventListener('click', () => {
-    showSignUp();
-  });
-  switchToSignInBtn.addEventListener('click', () => {
-    showSignIn();
-  });
+  // Button event listeners
+  showSignInBtn.onclick = () => showSignIn();
+  showSignUpBtn.onclick = () => showSignUp();
+  signupSubmit.onclick = () => signUp();
+  signinSubmit.onclick = () => signIn();
+  btnSignOut.onclick = () => signOut();
+  btnGoAdmin.onclick = () => {
+    window.location.href = 'admin.html';
+  };
+  sendMessageBtn.onclick = () => sendMessage();
+  btnBackToChatrooms.onclick = () => {
+    currentChatroom = null;
+    showSection(chatroomsSection);
+  };
 
-  // On load
+  // On page load, default to sign in form
   window.onload = () => {
-    checkSession();
+    updateNav();
+    showSignIn();
   };
 </script>
 
