@@ -7,393 +7,334 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 1rem;
-      background: #f8f8f8;
-      color: #333;
-    }
-    h1 {
-      color: #8b1453;
-    }
-    .hidden {
-      display: none;
-    }
-    .error {
-      color: red;
-      margin-top: 1rem;
-    }
-    #signOutBtn {
-      margin-top: 1rem;
-      padding: 0.5rem 1rem;
-      background-color: #8b1453;
-      border: none;
-      color: white;
-      cursor: pointer;
-      border-radius: 4px;
-    }
-    #adminContent {
-      margin-top: 2rem;
-    }
-    label {
-      font-weight: bold;
-    }
-    input[type="text"] {
-      padding: 0.3rem;
-      margin-right: 0.5rem;
-      width: 250px;
+      margin: 20px;
+      max-width: 900px;
     }
     button {
-      background-color: #8b1453;
-      color: white;
-      border: none;
-      padding: 0.4rem 0.8rem;
-      cursor: pointer;
-      border-radius: 4px;
-      margin-top: 0.5rem;
+      margin-left: 10px;
     }
-    button:hover {
-      background-color: #6e0f3e;
+    #errorMessage {
+      color: red;
+      margin-bottom: 20px;
     }
     ul {
-      list-style: none;
+      list-style-type: none;
       padding-left: 0;
     }
     li {
-      background: white;
-      margin-bottom: 0.5rem;
-      padding: 0.6rem;
-      border-radius: 5px;
-      box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
+      margin-bottom: 8px;
     }
-    .chatroom-item,
-    .member-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+    #returnToChatroomsBtn {
+      margin: 15px 0;
+      display: none;
     }
-    .checkboxes {
-      margin-top: 0.5rem;
-    }
-    .checkboxes label {
-      font-weight: normal;
-      margin-right: 1rem;
+    #memberSection {
+      display: none;
     }
   </style>
+  <!-- Firebase App (the core Firebase SDK) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
-  <h1>YMF Messaging Platform - Admin Panel</h1>
+<h1>YMF Messaging Platform Admin Panel</h1>
 
-  <div id="signInContainer">
-    <p>Please sign in with your Google account to access the admin panel.</p>
-    <button id="signInBtn">Sign In with Google</button>
-  </div>
+<div id="errorMessage"></div>
 
-  <div id="adminContent" class="hidden">
-    <button id="signOutBtn">Sign Out</button>
+<!-- Sign In / Sign Out Buttons -->
+<div id="authSection">
+  <button id="signInBtn">Sign in with Google</button>
+  <button id="signOutBtn" style="display:none;">Sign out</button>
+</div>
 
-    <h2>Chatrooms</h2>
-    <input type="text" id="newChatroomName" placeholder="New chatroom name" />
-    <button id="createChatroomBtn">Create Chatroom</button>
-    <ul id="chatroomsList"></ul>
+<!-- Chatrooms Section -->
+<div id="chatroomsSection">
+  <h2>Chatrooms</h2>
+  <input type="text" id="newChatroomName" placeholder="New chatroom name" />
+  <button id="createChatroomBtn">Create Chatroom</button>
+  <ul id="chatroomsList"></ul>
+</div>
 
-    <h2>Members</h2>
-    <ul id="membersList"></ul>
+<!-- Member Management Section -->
+<div id="memberSection">
+  <h2 id="chatroomMembersTitle"></h2>
+  <button id="returnToChatroomsBtn">Return to Chatrooms</button>
 
-    <div id="errorMsg" class="error hidden"></div>
-  </div>
+  <h3>Members Assigned to Chatroom</h3>
+  <ul id="membersList"></ul>
 
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <h3>Members Awaiting Approval</h3>
+  <ul id="awaitingApprovalList"></ul>
+</div>
 
-  <script>
-    // Your Firebase config (replace with your actual config)
-    const firebaseConfig = {
-      apiKey: "AIzaSyCp94HHzIFiZh5kZREi7ZIVVL67IMnHEXw",
-      authDomain: "ymf-messaging-platform.firebaseapp.com",
-      projectId: "ymf-messaging-platform",
-      storageBucket: "ymf-messaging-platform.appspot.com",
-      messagingSenderId: "820655157281",
-      appId: "1:820655157281:web:9713621443c068abd73360"
-    };
+<script>
+  // Your Firebase config here (update with your config)
+  const firebaseConfig = {
+    apiKey: "AIzaSyCp94HHzIFiZh5kZREi7ZIVVL67IMnHEXw",
+    authDomain: "ymf-messaging-platform.firebaseapp.com",
+    projectId: "ymf-messaging-platform",
+    storageBucket: "ymf-messaging-platform.appspot.com",
+    messagingSenderId: "820655157281",
+    appId: "1:820655157281:web:9713621443c068abd73360"
+  };
 
-    firebase.initializeApp(firebaseConfig);
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
 
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+  // Elements
+  const signInBtn = document.getElementById('signInBtn');
+  const signOutBtn = document.getElementById('signOutBtn');
+  const errorMessage = document.getElementById('errorMessage');
+  const chatroomsList = document.getElementById('chatroomsList');
+  const membersList = document.getElementById('membersList');
+  const awaitingApprovalList = document.getElementById('awaitingApprovalList');
+  const chatroomsSection = document.getElementById('chatroomsSection');
+  const memberSection = document.getElementById('memberSection');
+  const chatroomMembersTitle = document.getElementById('chatroomMembersTitle');
+  const returnToChatroomsBtn = document.getElementById('returnToChatroomsBtn');
+  const createChatroomBtn = document.getElementById('createChatroomBtn');
+  const newChatroomName = document.getElementById('newChatroomName');
 
-    const signInBtn = document.getElementById('signInBtn');
-    const signOutBtn = document.getElementById('signOutBtn');
-    const signInContainer = document.getElementById('signInContainer');
-    const adminContent = document.getElementById('adminContent');
-    const chatroomsList = document.getElementById('chatroomsList');
-    const membersList = document.getElementById('membersList');
-    const errorMsg = document.getElementById('errorMsg');
+  let currentChatroomId = null;
+  let currentChatroomName = '';
 
-    // Allowed admin emails
-    const admins = [
-      "ian@ianchalkmusic.com",
-      "sue.chalk@hotmail.co.uk"
-    ];
+  // Show error
+  function showError(message) {
+    errorMessage.textContent = message;
+  }
 
-    function showError(msg) {
-      errorMsg.textContent = msg;
-      errorMsg.classList.remove('hidden');
-    }
+  // Clear error
+  function clearError() {
+    errorMessage.textContent = '';
+  }
 
-    function clearError() {
-      errorMsg.textContent = "";
-      errorMsg.classList.add('hidden');
-    }
-
-    function toggleUI(signedIn) {
-      if (signedIn) {
-        signInContainer.classList.add('hidden');
-        adminContent.classList.remove('hidden');
-      } else {
-        signInContainer.classList.remove('hidden');
-        adminContent.classList.add('hidden');
-      }
-    }
-
-    // Check auth state
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        if (admins.includes(user.email.toLowerCase())) {
-          toggleUI(true);
-          loadData();
-        } else {
-          toggleUI(false);
-          showError("Access denied. You are not an admin.");
-          auth.signOut();
-        }
-      } else {
-        toggleUI(false);
-        clearError();
-      }
-    });
-
-    signInBtn.addEventListener('click', () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider).catch(err => showError(err.message));
-    });
-
-    signOutBtn.addEventListener('click', () => {
-      auth.signOut();
-    });
-
-    // Load chatrooms and members
-    async function loadData() {
+  // Authentication state observer
+  auth.onAuthStateChanged(user => {
+    if (user && (user.email === 'ian@ianchalkmusic.com' || user.email === 'sue.chalk@hotmail.co.uk')) {
       clearError();
+      signInBtn.style.display = 'none';
+      signOutBtn.style.display = 'inline-block';
+      chatroomsSection.style.display = 'block';
+      loadData();
+    } else {
+      signInBtn.style.display = 'inline-block';
+      signOutBtn.style.display = 'none';
+      chatroomsSection.style.display = 'none';
+      memberSection.style.display = 'none';
+      showError('Please sign in with an authorized admin Google account.');
+    }
+  });
+
+  // Sign in with Google
+  signInBtn.onclick = () => {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).catch(error => {
+      showError('Sign-in error: ' + error.message);
+    });
+  };
+
+  // Sign out
+  signOutBtn.onclick = () => {
+    auth.signOut();
+  };
+
+  // Load chatrooms and members
+  async function loadData() {
+    clearError();
+
+    if (!auth.currentUser) {
+      showError('Not authenticated.');
+      return;
+    }
+
+    try {
+      // Load chatrooms
+      const chatroomsSnapshot = await db.collection('chatrooms').get();
       chatroomsList.innerHTML = '';
-      membersList.innerHTML = '';
+      chatroomsSnapshot.forEach(doc => {
+        const chatroom = doc.data();
+        const li = document.createElement('li');
+        li.textContent = chatroom.name;
+        li.style.cursor = 'pointer';
+        li.onclick = () => selectChatroom(doc.id, chatroom.name);
 
-      try {
-        const chatroomsSnapshot = await db.collection('chatrooms').get();
-        chatroomsSnapshot.forEach(doc => {
-          const chatroom = { id: doc.id, ...doc.data() };
-          addChatroomToList(chatroom);
-        });
+        // Add rename button
+        const renameBtn = document.createElement('button');
+        renameBtn.textContent = 'Rename';
+        renameBtn.onclick = async (e) => {
+          e.stopPropagation();
+          const newName = prompt('Enter new name for chatroom:', chatroom.name);
+          if (newName && newName.trim() !== '') {
+            await db.collection('chatrooms').doc(doc.id).update({ name: newName.trim() });
+            loadData();
+          }
+        };
+        li.appendChild(renameBtn);
 
-        const membersSnapshot = await db.collection('members').get();
-        membersSnapshot.forEach(doc => {
-          const member = { id: doc.id, ...doc.data() };
-          addMemberToList(member);
-        });
-      } catch (error) {
-        showError("Error loading data: " + error.message);
-      }
-    }
+        // Add delete button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.onclick = async (e) => {
+          e.stopPropagation();
+          if (confirm(`Delete chatroom "${chatroom.name}"?`)) {
+            await db.collection('chatrooms').doc(doc.id).delete();
+            loadData();
+          }
+        };
+        li.appendChild(deleteBtn);
 
-    // Add chatroom UI
-    function addChatroomToList(chatroom) {
-      const li = document.createElement('li');
-      li.classList.add('chatroom-item');
-
-      const nameSpan = document.createElement('span');
-      nameSpan.textContent = chatroom.name;
-
-      // Rename input
-      const renameInput = document.createElement('input');
-      renameInput.type = 'text';
-      renameInput.value = chatroom.name;
-      renameInput.style.marginRight = '10px';
-
-      // Save rename button
-      const saveBtn = document.createElement('button');
-      saveBtn.textContent = 'Rename';
-      saveBtn.addEventListener('click', () => renameChatroom(chatroom.id, renameInput.value));
-
-      // Delete button
-      const deleteBtn = document.createElement('button');
-      deleteBtn.textContent = 'Delete';
-      deleteBtn.style.marginLeft = '10px';
-      deleteBtn.addEventListener('click', () => deleteChatroom(chatroom.id));
-
-      const container = document.createElement('div');
-      container.appendChild(nameSpan);
-      container.appendChild(renameInput);
-      container.appendChild(saveBtn);
-      container.appendChild(deleteBtn);
-
-      li.appendChild(container);
-      chatroomsList.appendChild(li);
-    }
-
-    // Add member UI
-    function addMemberToList(member) {
-      const li = document.createElement('li');
-      li.classList.add('member-item');
-
-      const nameSpan = document.createElement('span');
-      nameSpan.textContent = `${member.firstName || ''} ${member.surname || ''} (${member.email})`;
-
-      // Approve button (if not approved)
-      let approveBtn = null;
-      if (!member.approved) {
-        approveBtn = document.createElement('button');
-        approveBtn.textContent = 'Approve';
-        approveBtn.addEventListener('click', () => approveMember(member.id));
-      }
-
-      // Delete button
-      const deleteBtn = document.createElement('button');
-      deleteBtn.textContent = 'Delete';
-      deleteBtn.style.marginLeft = '10px';
-      deleteBtn.addEventListener('click', () => deleteMember(member.id));
-
-      // Chatroom assignments checkboxes
-      const chatroomsDiv = document.createElement('div');
-      chatroomsDiv.classList.add('checkboxes');
-      chatroomsDiv.textContent = 'Assign to chatrooms: ';
-
-      // Load chatrooms again to show checkboxes (this could be optimized)
-      db.collection('chatrooms').get().then(chatroomsSnapshot => {
-        chatroomsSnapshot.forEach(doc => {
-          const chatroom = { id: doc.id, ...doc.data() };
-          const label = document.createElement('label');
-          const checkbox = document.createElement('input');
-          checkbox.type = 'checkbox';
-          checkbox.checked = member.chatrooms?.includes(chatroom.id) || false;
-          checkbox.addEventListener('change', () => toggleMemberChatroom(member.id, chatroom.id, checkbox.checked));
-          label.appendChild(checkbox);
-          label.appendChild(document.createTextNode(chatroom.name));
-          chatroomsDiv.appendChild(label);
-        });
+        chatroomsList.appendChild(li);
       });
 
-      const container = document.createElement('div');
-      container.appendChild(nameSpan);
-      if (approveBtn) container.appendChild(approveBtn);
-      container.appendChild(deleteBtn);
-      container.appendChild(chatroomsDiv);
+      // If a chatroom is selected, show members
+      if (currentChatroomId) {
+        chatroomsSection.style.display = 'none';
+        memberSection.style.display = 'block';
+        returnToChatroomsBtn.style.display = 'inline-block';
+        chatroomMembersTitle.textContent = `Members in chatroom: ${currentChatroomName}`;
+        await loadChatroomMembers(currentChatroomId);
+      } else {
+        chatroomsSection.style.display = 'block';
+        memberSection.style.display = 'none';
+        returnToChatroomsBtn.style.display = 'none';
+      }
 
-      li.appendChild(container);
-      membersList.appendChild(li);
+      // Load members awaiting approval
+      const awaitingSnapshot = await db.collection('members').where('approved', '==', false).get();
+      awaitingApprovalList.innerHTML = '';
+      awaitingSnapshot.forEach(doc => {
+        const member = doc.data();
+        const li = document.createElement('li');
+        li.textContent = `${member.firstName} ${member.lastName} (${member.email})`;
+
+        // Approve button
+        const approveBtn = document.createElement('button');
+        approveBtn.textContent = 'Approve';
+        approveBtn.onclick = () => approveMember(doc.id);
+        li.appendChild(approveBtn);
+
+        // Delete button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.onclick = () => deleteMember(doc.id);
+        li.appendChild(deleteBtn);
+
+        awaitingApprovalList.appendChild(li);
+      });
+
+    } catch (error) {
+      showError('Error loading data: ' + error.message);
     }
+  }
 
-    // Create chatroom
-    document.getElementById('createChatroomBtn').addEventListener('click', async () => {
-      clearError();
-      const nameInput = document.getElementById('newChatroomName');
-      const name = nameInput.value.trim();
-      if (!name) {
-        showError("Chatroom name cannot be empty.");
+  // Select a chatroom to manage members
+  function selectChatroom(id, name) {
+    currentChatroomId = id;
+    currentChatroomName = name;
+    loadData();
+  }
+
+  // Return to chatrooms list
+  returnToChatroomsBtn.onclick = () => {
+    currentChatroomId = null;
+    currentChatroomName = '';
+    loadData();
+  };
+
+  // Load approved members assigned to the selected chatroom
+  async function loadChatroomMembers(chatroomId) {
+    try {
+      const approvedSnapshot = await db.collection('members').where('approved', '==', true).get();
+      membersList.innerHTML = '';
+
+      approvedSnapshot.forEach(doc => {
+        const member = doc.data();
+        if (member.chatrooms && member.chatrooms.includes(chatroomId)) {
+          const li = document.createElement('li');
+          li.textContent = `${member.firstName} ${member.lastName} (${member.email})`;
+
+          // Checkbox to toggle chatroom membership
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.checked = true;
+          checkbox.onchange = () => toggleMemberChatroom(doc.id, chatroomId, checkbox.checked);
+          li.prepend(checkbox);
+
+          membersList.appendChild(li);
+        }
+      });
+    } catch (error) {
+      showError('Error loading chatroom members: ' + error.message);
+    }
+  }
+
+  // Approve member
+  async function approveMember(id) {
+    clearError();
+    try {
+      await db.collection('members').doc(id).update({ approved: true });
+      loadData();
+    } catch (error) {
+      showError('Error approving member: ' + error.message);
+    }
+  }
+
+  // Delete member
+  async function deleteMember(id) {
+    clearError();
+    if (!confirm('Are you sure you want to delete this member?')) return;
+    try {
+      await db.collection('members').doc(id).delete();
+      loadData();
+    } catch (error) {
+      showError('Error deleting member: ' + error.message);
+    }
+  }
+
+  // Toggle member chatroom assignment
+  async function toggleMemberChatroom(memberId, chatroomId, assigned) {
+    clearError();
+    try {
+      const memberRef = db.collection('members').doc(memberId);
+      const memberDoc = await memberRef.get();
+      if (!memberDoc.exists) {
+        showError('Member not found');
         return;
       }
-      try {
-        await db.collection('chatrooms').add({ name });
-        nameInput.value = '';
-        loadData();
-      } catch (error) {
-        showError("Error creating chatroom: " + error.message);
-      }
-    });
-
-    // Rename chatroom
-    async function renameChatroom(id, newName) {
-      clearError();
-      if (!newName.trim()) {
-        showError("Chatroom name cannot be empty.");
-        return;
-      }
-      try {
-        await db.collection('chatrooms').doc(id).update({ name: newName.trim() });
-        loadData();
-      } catch (error) {
-        showError("Error renaming chatroom: " + error.message);
-      }
-    }
-
-    // Delete chatroom
-    async function deleteChatroom(id) {
-      clearError();
-      if (!confirm("Are you sure you want to delete this chatroom?")) return;
-      try {
-        await db.collection('chatrooms').doc(id).delete();
-        // Also remove this chatroom from all members
-        const membersSnapshot = await db.collection('members').get();
-        membersSnapshot.forEach(doc => {
-          const memberData = doc.data();
-          if (memberData.chatrooms?.includes(id)) {
-            const updatedChatrooms = memberData.chatrooms.filter(cid => cid !== id);
-            db.collection('members').doc(doc.id).update({ chatrooms: updatedChatrooms });
-          }
-        });
-        loadData();
-      } catch (error) {
-        showError("Error deleting chatroom: " + error.message);
-      }
-    }
-
-    // Approve member
-    async function approveMember(id) {
-      clearError();
-      try {
-        await db.collection('members').doc(id).update({ approved: true });
-        loadData();
-      } catch (error) {
-        showError("Error approving member: " + error.message);
-      }
-    }
-
-    // Delete member
-    async function deleteMember(id) {
-      clearError();
-      if (!confirm("Are you sure you want to delete this member?")) return;
-      try {
-        await db.collection('members').doc(id).delete();
-        loadData();
-      } catch (error) {
-        showError("Error deleting member: " + error.message);
-      }
-    }
-
-    // Toggle member chatroom assignment
-    async function toggleMemberChatroom(memberId, chatroomId, assigned) {
-      clearError();
-      try {
-        const memberRef = db.collection('members').doc(memberId);
-        const memberDoc = await memberRef.get();
-        if (!memberDoc.exists) {
-          showError("Member not found");
-          return;
+      let chatrooms = memberDoc.data().chatrooms || [];
+      if (assigned) {
+        if (!chatrooms.includes(chatroomId)) {
+          chatrooms.push(chatroomId);
         }
-        let chatrooms = memberDoc.data().chatrooms || [];
-        if (assigned) {
-          if (!chatrooms.includes(chatroomId)) {
-            chatrooms.push(chatroomId);
-          }
-        } else {
-          chatrooms = chatrooms.filter(id => id !== chatroomId);
-        }
-        await memberRef.update({ chatrooms });
-      } catch (error) {
-        showError("Error updating chatroom assignment: " + error.message);
+      } else {
+        chatrooms = chatrooms.filter(id => id !== chatroomId);
       }
+      await memberRef.update({ chatrooms });
+    } catch (error) {
+      showError('Error updating chatroom assignment: ' + error.message);
     }
-  </script>
+  }
+
+  // Create new chatroom
+  createChatroomBtn.onclick = async () => {
+    const name = newChatroomName.value.trim();
+    if (!name) {
+      alert('Please enter a chatroom name.');
+      return;
+    }
+    try {
+      await db.collection('chatrooms').add({ name });
+      newChatroomName.value = '';
+      loadData();
+    } catch (error) {
+      showError('Error creating chatroom: ' + error.message);
+    }
+  };
+</script>
 
 </body>
 </html>
