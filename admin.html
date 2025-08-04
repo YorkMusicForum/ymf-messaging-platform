@@ -2,95 +2,528 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>YMF Admin Panel</title>
-  <link href="https://fonts.googleapis.com/css2?family=AbeeZee&family=Muli&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>YMF Messaging Platform - Admin Panel</title>
   <style>
     body {
       font-family: 'Muli', sans-serif;
-      background-color: #fff;
-      color: #000;
+      background: #fff;
+      color: #8b1453;
+      margin: 0;
       padding: 20px;
     }
-    header {
-      text-align: center;
-      position: relative;
-    }
-    header img {
-      width: 200px;
-    }
     h1, h2 {
-      font-family: 'AbeeZee', sans-serif;
+      font-family: 'Abeezee', serif;
       color: #8b1453;
     }
-    section {
-      margin-bottom: 40px;
+    .container {
+      max-width: 900px;
+      margin: auto;
     }
-    ul {
-      list-style: none;
-      padding: 0;
+    nav {
+      margin-bottom: 20px;
     }
-    li {
-      padding: 8px;
-      border-bottom: 1px solid #ddd;
-    }
-    button {
+    nav button {
       background-color: #8b1453;
       color: white;
       border: none;
-      padding: 5px 10px;
-      margin: 5px;
-      border-radius: 5px;
+      padding: 10px 15px;
+      margin-right: 10px;
+      cursor: pointer;
+      font-size: 16px;
+      border-radius: 4px;
+    }
+    nav button.active {
+      background-color: #5c0f38;
+    }
+    section {
+      display: none;
+    }
+    section.active {
+      display: block;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    table, th, td {
+      border: 1px solid #8b1453;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+      vertical-align: middle;
+    }
+    input[type="text"], select {
+      padding: 5px;
+      font-size: 14px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    button.small-btn {
+      font-size: 12px;
+      padding: 5px 8px;
+      margin-left: 5px;
       cursor: pointer;
     }
-    button:hover {
-      background-color: #a61b65;
-    }
-    input[type="text"] {
+    .checkbox-list {
+      max-height: 100px;
+      overflow-y: auto;
+      border: 1px solid #8b1453;
       padding: 5px;
-      width: 200px;
-      margin-right: 10px;
     }
-    #logout-button {
-      position: absolute;
-      right: 20px;
-      top: 20px;
+    .checkbox-list label {
+      display: block;
+      margin-bottom: 4px;
+      cursor: pointer;
     }
-    #return-button {
-      margin-bottom: 20px;
+    .pending {
+      color: darkorange;
+      font-weight: bold;
+    }
+    .approved {
+      color: green;
+      font-weight: bold;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+    .success {
+      color: green;
+      font-weight: bold;
+    }
+    #logoutBtn {
+      float: right;
+      background-color: #a32f6d;
+      margin-top: -50px;
     }
   </style>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
-  <header>
-    <img src="assets/ymf-logo.png" alt="YMF Logo">
-    <h1>Admin Panel</h1>
-    <button id="logout-button">Logout</button>
-  </header>
+  <div class="container">
+    <h1>YMF Messaging Platform - Admin Panel</h1>
+    <button id="logoutBtn">Logout</button>
 
-  <button id="return-button" onclick="window.location.href='index.html'">Return to Chatrooms</button>
+    <nav>
+      <button id="tab-members" class="active">Members</button>
+      <button id="tab-chatrooms">Chatrooms</button>
+    </nav>
 
-  <div id="admin-panel" style="display: none;">
-    <section>
-      <h2>Pending Member Approvals</h2>
-      <ul id="user-list"></ul>
+    <section id="members-section" class="active">
+      <h2>Member Management</h2>
+      <table id="members-table" aria-label="List of members">
+        <thead>
+          <tr>
+            <th>Full Name</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Chatrooms</th>
+            <th>Approve/Reject</th>
+            <th>Assign Chatrooms</th>
+            <th>Delete</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Members will be loaded here -->
+        </tbody>
+      </table>
+      <p id="members-msg"></p>
     </section>
 
-    <section>
-      <h2>Approved Members</h2>
-      <ul id="approved-list"></ul>
-    </section>
-
-    <section>
-      <h2>Chatrooms</h2>
-      <ul id="chatroom-list"></ul>
-      <form id="chatroom-form">
+    <section id="chatrooms-section">
+      <h2>Chatroom Management</h2>
+      <form id="create-chatroom-form" aria-label="Create new chatroom">
         <input type="text" id="new-chatroom-name" placeholder="New chatroom name" required />
         <button type="submit">Create Chatroom</button>
       </form>
+      <table id="chatrooms-table" aria-label="List of chatrooms">
+        <thead>
+          <tr>
+            <th>Chatroom Name</th>
+            <th>Rename</th>
+            <th>Delete</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Chatrooms will be loaded here -->
+        </tbody>
+      </table>
+      <p id="chatrooms-msg"></p>
     </section>
   </div>
 
-  <script type="module" src="scripts/admin.js"></script>
-</body>
-</html>
+  <script>
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyCp94HHzIFiZh5kZREi7ZIVVL67IMnHEXw",
+      authDomain: "ymf-messaging-platform.firebaseapp.com",
+      projectId: "ymf-messaging-platform",
+      storageBucket: "ymf-messaging-platform.firebasestorage.app",
+      messagingSenderId: "820655157281",
+      appId: "1:820655157281:web:9713621443c068abd73360"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // Allowed admin emails
+    const admins = ["ian@ianchalkmusic.com", "sue.chalk@hotmail.co.uk"];
+
+    // UI elements
+    const tabMembersBtn = document.getElementById('tab-members');
+    const tabChatroomsBtn = document.getElementById('tab-chatrooms');
+    const membersSection = document.getElementById('members-section');
+    const chatroomsSection = document.getElementById('chatrooms-section');
+    const membersTableBody = document.querySelector('#members-table tbody');
+    const chatroomsTableBody = document.querySelector('#chatrooms-table tbody');
+    const membersMsg = document.getElementById('members-msg');
+    const chatroomsMsg = document.getElementById('chatrooms-msg');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const createChatroomForm = document.getElementById('create-chatroom-form');
+    const newChatroomNameInput = document.getElementById('new-chatroom-name');
+
+    // State holders
+    let users = [];
+    let chatrooms = [];
+
+    // Switch between tabs
+    tabMembersBtn.addEventListener('click', () => {
+      tabMembersBtn.classList.add('active');
+      tabChatroomsBtn.classList.remove('active');
+      membersSection.classList.add('active');
+      chatroomsSection.classList.remove('active');
+    });
+
+    tabChatroomsBtn.addEventListener('click', () => {
+      tabChatroomsBtn.classList.add('active');
+      tabMembersBtn.classList.remove('active');
+      chatroomsSection.classList.add('active');
+      membersSection.classList.remove('active');
+    });
+
+    // Logout
+    logoutBtn.addEventListener('click', () => {
+      auth.signOut();
+    });
+
+    // Auth state check
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        if (!admins.includes(user.email)) {
+          alert("Access denied. You are not an admin.");
+          auth.signOut();
+          return;
+        }
+        loadData();
+      } else {
+        // Prompt sign-in if not logged in
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(err => alert("Sign in failed: " + err.message));
+      }
+    });
+
+    // Load chatrooms and users
+    async function loadData() {
+      membersMsg.textContent = "Loading members...";
+      chatroomsMsg.textContent = "Loading chatrooms...";
+      try {
+        // Load chatrooms
+        const chatroomsSnapshot = await db.collection('chatrooms').get();
+        chatrooms = chatroomsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderChatrooms();
+
+        // Load users
+        const usersSnapshot = await db.collection('users').get();
+        users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderUsers();
+
+        membersMsg.textContent = "";
+        chatroomsMsg.textContent = "";
+      } catch (error) {
+        membersMsg.textContent = "Failed to load data: " + error.message;
+        chatroomsMsg.textContent = "Failed to load data: " + error.message;
+      }
+    }
+
+    // Renders users table
+    function renderUsers() {
+      membersTableBody.innerHTML = "";
+      if (users.length === 0) {
+        membersTableBody.innerHTML = `<tr><td colspan="7">No members found.</td></tr>`;
+        return;
+      }
+      users.forEach(user => {
+        const tr = document.createElement('tr');
+
+        // Full name
+        const nameTd = document.createElement('td');
+        nameTd.textContent = user.fullName || '(No Name)';
+        tr.appendChild(nameTd);
+
+        // Email
+        const emailTd = document.createElement('td');
+        emailTd.textContent = user.email;
+        tr.appendChild(emailTd);
+
+        // Status (approved or pending)
+        const statusTd = document.createElement('td');
+        statusTd.textContent = user.approved ? 'Approved' : 'Pending';
+        statusTd.className = user.approved ? 'approved' : 'pending';
+        tr.appendChild(statusTd);
+
+        // Chatrooms (comma separated)
+        const chatroomsTd = document.createElement('td');
+        chatroomsTd.textContent = (user.chatrooms || []).join(', ');
+        tr.appendChild(chatroomsTd);
+
+        // Approve / Reject buttons (only if pending)
+        const approveTd = document.createElement('td');
+        if (!user.approved) {
+          const approveBtn = document.createElement('button');
+          approveBtn.textContent = "Approve";
+          approveBtn.className = "small-btn";
+          approveBtn.addEventListener('click', () => updateUserApproval(user.id, true));
+          approveTd.appendChild(approveBtn);
+
+          const rejectBtn = document.createElement('button');
+          rejectBtn.textContent = "Reject";
+          rejectBtn.className = "small-btn";
+          rejectBtn.style.marginLeft = "5px";
+          rejectBtn.addEventListener('click', () => deleteUser(user.id));
+          approveTd.appendChild(rejectBtn);
+        } else {
+          approveTd.textContent = '-';
+        }
+        tr.appendChild(approveTd);
+
+        // Assign chatrooms
+        const assignTd = document.createElement('td');
+        if (user.approved) {
+          const assignDiv = document.createElement('div');
+          assignDiv.className = "checkbox-list";
+
+          chatrooms.forEach(cr => {
+            const label = document.createElement('label');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = cr.name;
+            checkbox.checked = user.chatrooms && user.chatrooms.includes(cr.name);
+            checkbox.addEventListener('change', e => {
+              toggleUserChatroom(user.id, cr.name, e.target.checked);
+            });
+            label.appendChild(checkbox);
+            label.appendChild(document.createTextNode(' ' + cr.name));
+            assignDiv.appendChild(label);
+          });
+          assignTd.appendChild(assignDiv);
+        } else {
+          assignTd.textContent = '-';
+        }
+        tr.appendChild(assignTd);
+
+        // Delete user
+        const deleteTd = document.createElement('td');
+        const delBtn = document.createElement('button');
+        delBtn.textContent = "Delete";
+        delBtn.className = "small-btn";
+        delBtn.style.backgroundColor = "#a32f6d";
+        delBtn.style.color = "white";
+        delBtn.addEventListener('click', () => {
+          if (confirm(`Delete user "${user.fullName}"? This cannot be undone.`)) {
+            deleteUser(user.id);
+          }
+        });
+        deleteTd.appendChild(delBtn);
+        tr.appendChild(deleteTd);
+
+        membersTableBody.appendChild(tr);
+      });
+    }
+
+    // Renders chatrooms table
+    function renderChatrooms() {
+      chatroomsTableBody.innerHTML = "";
+      if (chatrooms.length === 0) {
+        chatroomsTableBody.innerHTML = `<tr><td colspan="3">No chatrooms found.</td></tr>`;
+        return;
+      }
+      chatrooms.forEach(cr => {
+        const tr = document.createElement('tr');
+
+        // Chatroom name (non-editable span + editable input toggle)
+        const nameTd = document.createElement('td');
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = cr.name;
+        nameSpan.style.cursor = 'pointer';
+
+        // Input for renaming (hidden initially)
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.value = cr.name;
+        nameInput.style.display = 'none';
+        nameInput.style.width = '90%';
+
+        nameTd.appendChild(nameSpan);
+        nameTd.appendChild(nameInput);
+        tr.appendChild(nameTd);
+
+        // Rename button
+        const renameTd = document.createElement('td');
+        const renameBtn = document.createElement('button');
+        renameBtn.textContent = "Rename";
+        renameBtn.className = "small-btn";
+        renameTd.appendChild(renameBtn);
+        tr.appendChild(renameTd);
+
+        // Delete button
+        const deleteTd = document.createElement('td');
+        const delBtn = document.createElement('button');
+        delBtn.textContent = "Delete";
+        delBtn.className = "small-btn";
+        delBtn.style.backgroundColor = "#a32f6d";
+        delBtn.style.color = "white";
+        deleteTd.appendChild(delBtn);
+        tr.appendChild(deleteTd);
+
+        // Rename button logic
+        renameBtn.addEventListener('click', () => {
+          if (nameInput.style.display === 'none') {
+            nameSpan.style.display = 'none';
+            nameInput.style.display = 'inline-block';
+            nameInput.focus();
+            renameBtn.textContent = 'Save';
+          } else {
+            const newName = nameInput.value.trim();
+            if (!newName) {
+              alert("Chatroom name cannot be empty.");
+              return;
+            }
+            if (newName === cr.name) {
+              // No change, just revert UI
+              nameInput.style.display = 'none';
+              nameSpan.style.display = 'inline';
+              renameBtn.textContent = 'Rename';
+              return;
+            }
+            // Check if name already exists
+            if (chatrooms.some(c => c.name.toLowerCase() === newName.toLowerCase())) {
+              alert("Chatroom name already exists.");
+              return;
+            }
+            renameChatroom(cr.id, newName);
+            nameSpan.textContent = newName;
+            nameInput.style.display = 'none';
+            nameSpan.style.display = 'inline';
+            renameBtn.textContent = 'Rename';
+          }
+        });
+
+        // Delete button logic
+        delBtn.addEventListener('click', () => {
+          if (confirm(`Delete chatroom "${cr.name}"? This will remove it from all members.`)) {
+            deleteChatroom(cr.id, cr.name);
+          }
+        });
+
+        chatroomsTableBody.appendChild(tr);
+      });
+    }
+
+    // Create new chatroom
+    createChatroomForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = newChatroomNameInput.value.trim();
+      if (!name) {
+        alert("Please enter a chatroom name.");
+        return;
+      }
+      if (chatrooms.some(cr => cr.name.toLowerCase() === name.toLowerCase())) {
+        alert("Chatroom name already exists.");
+        return;
+      }
+      try {
+        const docRef = await db.collection('chatrooms').add({
+          name,
+          members: []
+        });
+        chatrooms.push({ id: docRef.id, name, members: [] });
+        renderChatrooms();
+        newChatroomNameInput.value = "";
+        chatroomsMsg.textContent = "Chatroom created successfully.";
+        setTimeout(() => chatroomsMsg.textContent = "", 3000);
+      } catch (error) {
+        chatroomsMsg.textContent = "Failed to create chatroom: " + error.message;
+      }
+    });
+
+    // Approve or reject user
+    async function updateUserApproval(userId, approved) {
+      try {
+        await db.collection('users').doc(userId).update({ approved });
+        // Reload users list
+        const index = users.findIndex(u => u.id === userId);
+        if (index > -1) {
+          users[index].approved = approved;
+          // If approved, initialize chatrooms array if not exist
+          if (approved && !users[index].chatrooms) users[index].chatrooms = [];
+        }
+        renderUsers();
+      } catch (error) {
+        membersMsg.textContent = "Failed to update user approval: " + error.message;
+      }
+    }
+
+    // Delete user (also remove from chatrooms members arrays)
+    async function deleteUser(userId) {
+      try {
+        // Remove user doc
+        await db.collection('users').doc(userId).delete();
+        // Remove user from chatrooms members lists
+        for (const cr of chatrooms) {
+          if (cr.members && cr.members.includes(userId)) {
+            const newMembers = cr.members.filter(uid => uid !== userId);
+            await db.collection('chatrooms').doc(cr.id).update({ members: newMembers });
+            cr.members = newMembers;
+          }
+        }
+        // Remove user from local state and refresh UI
+        users = users.filter(u => u.id !== userId);
+        renderUsers();
+        membersMsg.textContent = "User deleted.";
+        setTimeout(() => membersMsg.textContent = "", 3000);
+      } catch (error) {
+        membersMsg.textContent = "Failed to delete user: " + error.message;
+      }
+    }
+
+    // Toggle chatroom membership for user
+    async function toggleUserChatroom(userId, chatroomName, add) {
+      try {
+        const userRef = db.collection('users').doc(userId);
+        const user = users.find(u => u.id === userId);
+        if (!user) return;
+
+        let newChatrooms;
+        if (add) {
+          newChatrooms = user.chatrooms ? [...user.chatrooms] : [];
+          if (!newChatrooms.includes(chatroomName)) {
+            newChatrooms.push(chatroomName);
+          }
+        } else {
+          newChatrooms = user.chatrooms ? user.chatrooms.filter(c => c !== chatroomName) : [];
+        }
+
+        await userRef.update({ chatrooms: newChatrooms });
+        user.chatrooms = newChatrooms;
+
+        // Also update chatroom members list
+        const chatroom = chatrooms.find
