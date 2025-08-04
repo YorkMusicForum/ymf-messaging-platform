@@ -2,224 +2,166 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>YMF Messaging Platform</title>
-  <link href="https://fonts.googleapis.com/css2?family=ABeeZee&family=Muli&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ABeeZee&family=Muli&display=swap">
   <style>
     body {
       font-family: 'Muli', sans-serif;
-      margin: 0;
-      padding: 0;
       background-color: #fff;
       color: #000;
-    }
-    header {
-      background-color: #8b1453;
-      color: white;
-      padding: 1rem;
+      margin: 0;
+      padding: 0;
       text-align: center;
+    }
+    h1, h2 {
       font-family: 'ABeeZee', sans-serif;
-    }
-    .container {
-      max-width: 600px;
-      margin: 2rem auto;
-      padding: 1rem;
-    }
-    h2 {
       color: #8b1453;
-    }
-    input, button, select {
-      display: block;
-      width: 100%;
-      margin-bottom: 1rem;
-      padding: 0.5rem;
-      font-size: 1rem;
-    }
-    .chatroom {
-      border: 1px solid #ccc;
-      padding: 1rem;
-      margin-bottom: 1rem;
     }
     .hidden {
       display: none;
     }
-    .chatroom-header {
-      font-weight: bold;
-      margin-bottom: 0.5rem;
+    .container {
+      max-width: 600px;
+      margin: 2rem auto;
     }
-    .message {
-      margin: 0.25rem 0;
+    input, button {
+      padding: 0.5rem;
+      margin: 0.5rem;
+      width: 80%;
+      max-width: 300px;
     }
-    .return-button {
-      margin-top: 1rem;
+    #chatrooms {
+      margin-top: 2rem;
+    }
+    .chatroom {
+      border: 1px solid #ccc;
+      margin: 0.5rem 0;
+      padding: 1rem;
+    }
+    #returnBtn {
+      margin-top: 2rem;
       background-color: #8b1453;
       color: white;
-      border: none;
-      padding: 0.5rem;
     }
   </style>
 </head>
 <body>
-  <header>
-    <img src="static/uploads/ymf-logo.png" alt="YMF Logo" height="60"><br/>
+  <div class="container">
+    <img src="ymf-logo.png" alt="YMF Logo" style="max-width: 150px;" />
     <h1>YMF Messaging Platform</h1>
-  </header>
 
-  <div class="container" id="auth-section">
-    <h2>Sign In</h2>
-    <input type="email" id="email" placeholder="Email address" />
-    <input type="password" id="password" placeholder="Password" />
-    <button onclick="signIn()">Sign In</button>
-    <h2>Or Sign Up</h2>
-    <input type="text" id="signup-name" placeholder="Full Name" />
-    <input type="email" id="signup-email" placeholder="Email address" />
-    <input type="password" id="signup-password" placeholder="Password" />
-    <button onclick="signUp()">Sign Up</button>
-  </div>
+    <div id="auth">
+      <h2>Sign In</h2>
+      <input type="email" id="email" placeholder="Email" />
+      <input type="password" id="password" placeholder="Password" />
+      <button onclick="signIn()">Sign In</button>
+      <p>or <a href="#" onclick="showSignUp()">Sign Up</a></p>
+    </div>
 
-  <div class="container hidden" id="approval-pending">
-    <p>Your account is awaiting approval by an admin.</p>
-  </div>
+    <div id="signup" class="hidden">
+      <h2>Sign Up</h2>
+      <input type="text" id="signupName" placeholder="Full Name" />
+      <input type="email" id="signupEmail" placeholder="Email" />
+      <input type="password" id="signupPassword" placeholder="Password" />
+      <button onclick="signUp()">Register</button>
+      <p>or <a href="#" onclick="showSignIn()">Sign In</a></p>
+    </div>
 
-  <div class="container hidden" id="chatrooms-section">
-    <h2>Your Chatrooms</h2>
-    <div id="chatroom-list"></div>
-  </div>
-
-  <div class="container hidden" id="chatroom-messages-section">
-    <div class="chatroom-header" id="chatroom-title"></div>
-    <div id="messages"></div>
-    <input type="text" id="messageInput" placeholder="Type a message..." />
-    <button onclick="sendMessage()">Send</button>
-    <button class="return-button" onclick="returnToChatrooms()">Return to Chatrooms</button>
+    <div id="chatrooms" class="hidden">
+      <h2>Your Chatrooms</h2>
+      <div id="chatroomList"></div>
+      <button id="returnBtn" onclick="window.location.href='admin.html'">Admin Page</button>
+    </div>
   </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
     import {
-      getFirestore, collection, query, where, getDocs, doc, getDoc,
-      updateDoc, addDoc, onSnapshot, orderBy, setDoc
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import {
-      getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs
+    } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCp94HHzIFiZh5kZREi7ZIVVL67IMnHEXw",
       authDomain: "ymf-messaging-platform.firebaseapp.com",
       projectId: "ymf-messaging-platform",
-      storageBucket: "ymf-messaging-platform.firebasestorage.app",
+      storageBucket: "ymf-messaging-platform.appspot.com",
       messagingSenderId: "820655157281",
       appId: "1:820655157281:web:9713621443c068abd73360"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const auth = getAuth();
-
-    let currentUser = null;
-    let currentChatroom = "";
-
-    async function signUp() {
-      const name = document.getElementById("signup-name").value;
-      const email = document.getElementById("signup-email").value;
-      const password = document.getElementById("signup-password").value;
-
-      try {
-        await createUserWithEmailAndPassword(auth, email, password);
-        await setDoc(doc(db, "users", email), {
-          name,
-          email,
-          password: btoa(password),
-          approved: false,
-          admin: false,
-          chatrooms: []
-        });
-        alert("Signed up! Waiting for admin approval.");
-      } catch (error) {
-        alert("Signup error: " + error.message);
-      }
-    }
 
     async function signIn() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
 
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-        const docRef = doc(db, "users", email);
-        const docSnap = await getDoc(docRef);
+      const q = query(collection(db, "users"), where("email", "==", email));
+      const querySnapshot = await getDocs(q);
 
-        if (!docSnap.exists()) {
-          alert("Account not found.");
-          return;
-        }
-
-        const userData = docSnap.data();
-
-        if (!userData.approved) {
-          document.getElementById("auth-section").classList.add("hidden");
-          document.getElementById("approval-pending").classList.remove("hidden");
-          return;
-        }
-
-        currentUser = userData;
-        loadChatrooms(userData.chatrooms);
-        document.getElementById("auth-section").classList.add("hidden");
-        document.getElementById("chatrooms-section").classList.remove("hidden");
-      } catch (error) {
-        alert("Sign-in failed: " + error.message);
+      if (querySnapshot.empty) {
+        alert("No account found with this email.");
+        return;
       }
+
+      const userData = querySnapshot.docs[0].data();
+
+      if (!userData.approved) {
+        alert("Your account is awaiting approval.");
+        return;
+      }
+
+      if (userData.password !== password) {
+        alert("Incorrect password.");
+        return;
+      }
+
+      showChatrooms(userData);
     }
 
-    function loadChatrooms(chatrooms) {
-      const list = document.getElementById("chatroom-list");
-      list.innerHTML = "";
-      chatrooms.forEach(name => {
-        const div = document.createElement("div");
-        div.className = "chatroom";
-        div.innerHTML = `<strong>${name}</strong><br/><button onclick="enterChatroom('${name}')">Enter</button>`;
-        list.appendChild(div);
+    async function signUp() {
+      const name = document.getElementById('signupName').value.trim();
+      const email = document.getElementById('signupEmail').value.trim();
+      const password = document.getElementById('signupPassword').value.trim();
+
+      await setDoc(doc(db, "users", email), {
+        name,
+        email,
+        password,
+        approved: false,
+        admin: false,
+        chatrooms: []
+      });
+
+      alert("Signup successful. Awaiting admin approval.");
+      showSignIn();
+    }
+
+    function showChatrooms(user) {
+      document.getElementById('auth').classList.add('hidden');
+      document.getElementById('signup').classList.add('hidden');
+      document.getElementById('chatrooms').classList.remove('hidden');
+
+      const container = document.getElementById("chatroomList");
+      container.innerHTML = "";
+
+      user.chatrooms.forEach(room => {
+        const div = document.createElement('div');
+        div.className = 'chatroom';
+        div.innerText = room;
+        container.appendChild(div);
       });
     }
 
-    async function enterChatroom(name) {
-      currentChatroom = name;
-      document.getElementById("chatrooms-section").classList.add("hidden");
-      document.getElementById("chatroom-messages-section").classList.remove("hidden");
-      document.getElementById("chatroom-title").textContent = name;
-      document.getElementById("messages").innerHTML = "";
-
-      const q = query(collection(db, "chatrooms", name, "messages"), orderBy("timestamp"));
-      onSnapshot(q, (snapshot) => {
-        const messagesDiv = document.getElementById("messages");
-        messagesDiv.innerHTML = "";
-        snapshot.forEach(doc => {
-          const msg = doc.data();
-          const p = document.createElement("p");
-          p.className = "message";
-          p.textContent = `${msg.sender}: ${msg.text}`;
-          messagesDiv.appendChild(p);
-        });
-      });
+    function showSignUp() {
+      document.getElementById('auth').classList.add('hidden');
+      document.getElementById('signup').classList.remove('hidden');
     }
 
-    async function sendMessage() {
-      const text = document.getElementById("messageInput").value.trim();
-      if (!text) return;
-
-      await addDoc(collection(db, "chatrooms", currentChatroom, "messages"), {
-        sender: currentUser.name,
-        text,
-        timestamp: new Date()
-      });
-
-      document.getElementById("messageInput").value = "";
-    }
-
-    function returnToChatrooms() {
-      document.getElementById("chatroom-messages-section").classList.add("hidden");
-      document.getElementById("chatrooms-section").classList.remove("hidden");
+    function showSignIn() {
+      document.getElementById('auth').classList.remove('hidden');
+      document.getElementById('signup').classList.add('hidden');
     }
   </script>
 </body>
