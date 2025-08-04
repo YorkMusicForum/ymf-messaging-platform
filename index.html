@@ -2,126 +2,230 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>YMF Messaging Platform</title>
-  <link href="https://fonts.googleapis.com/css2?family=AbeeZee&family=Muli&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=ABeeZee&family=Muli&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: 'Muli', sans-serif;
-      background-color: #fff;
+      background-color: #fdfdfd;
+      padding: 2rem;
       color: #000;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
     }
-    header {
-      text-align: center;
-      margin-top: 20px;
-    }
-    header img {
-      width: 200px;
-    }
+
     h1 {
+      font-family: 'ABeeZee', sans-serif;
       color: #8b1453;
-      font-family: 'AbeeZee', sans-serif;
+      margin-bottom: 1rem;
     }
-    .hidden {
+
+    #chatroomsList button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      margin-bottom: 10px;
+      padding: 10px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      background-color: white;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    #chatroomView {
       display: none;
     }
-    .container {
-      max-width: 400px;
-      width: 100%;
-      margin: 20px;
-      padding: 20px;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+
+    .message {
+      margin-bottom: 10px;
     }
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 5px;
-      border: 1px solid #ccc;
+
+    .message strong {
+      color: #8b1453;
     }
-    button {
+
+    #logoutBtn {
       background-color: #8b1453;
       color: white;
+      padding: 8px 16px;
       border: none;
-      padding: 10px 20px;
       border-radius: 5px;
       cursor: pointer;
-      width: 100%;
-      margin-top: 10px;
+      float: right;
     }
-    button:hover {
-      background-color: #a61b65;
+
+    #logoutBtn:hover {
+      background-color: #a51863;
     }
-    a#admin-link {
-      color: #8b1453;
-      font-weight: bold;
-      display: block;
-      margin-top: 10px;
-      text-decoration: none;
+
+    .chatroom-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
-    a#admin-link:hover {
-      text-decoration: underline;
+
+    #returnBtn {
+      background-color: #8b1453;
+      color: white;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #returnBtn:hover {
+      background-color: #a51863;
     }
   </style>
 </head>
 <body>
-  <header>
-    <img src="assets/ymf-logo.png" alt="YMF Logo" />
-    <h1>YMF Messaging Platform</h1>
-  </header>
-
-  <div id="login-area" class="container">
-    <h2>Login</h2>
-    <input type="email" id="email" placeholder="Email" />
-    <input type="password" id="password" placeholder="Password" />
-    <button onclick="login()">Login</button>
-    <button id="go-to-signup">Go to Sign Up</button>
+  <h1>YMF Messaging Platform</h1>
+  <button id="logoutBtn">Log Out</button>
+  <div id="loginSection">
+    <p>Please sign in to access your chatrooms:</p>
+    <button id="loginBtn">Sign In with Google</button>
   </div>
 
-  <div id="signup-area" class="container hidden">
-    <h2>Sign Up</h2>
-    <input type="text" id="signup-first-name" placeholder="First Name" />
-    <input type="text" id="signup-surname" placeholder="Surname" />
-    <input type="email" id="signup-email" placeholder="Email" />
-    <input type="password" id="signup-password" placeholder="Password" />
-    <button id="signup-button">Sign Up</button>
+  <div id="chatroomsList" style="display: none;">
+    <h2>Your Chatrooms</h2>
+    <div id="chatroomsContainer"></div>
   </div>
 
-  <div id="welcome-area" class="container hidden">
-    <h2>Welcome <span id="user-email"></span></h2>
-    <button onclick="logout()">Logout</button>
+  <div id="chatroomView">
+    <div class="chatroom-header">
+      <h2 id="chatroomName"></h2>
+      <button id="returnBtn">Return to Chatrooms</button>
+    </div>
+    <div id="messages"></div>
+    <form id="messageForm">
+      <input type="text" id="messageInput" placeholder="Type a message..." required>
+      <button type="submit">Send</button>
+    </form>
   </div>
 
-  <div id="chatroom-list" class="container hidden">
-    <h2>Select a Chatroom</h2>
-    <button class="chatroom-button" data-room="general">General</button>
-    <button class="chatroom-button" data-room="saxophones">Saxophones</button>
-    <button class="chatroom-button" data-room="trumpets">Trumpets</button>
-  </div>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCp94HHzIFiZh5kZREi7ZIVVL67IMnHEXw",
+      authDomain: "ymf-messaging-platform.firebaseapp.com",
+      projectId: "ymf-messaging-platform",
+      storageBucket: "ymf-messaging-platform.appspot.com",
+      messagingSenderId: "820655157281",
+      appId: "1:820655157281:web:9713621443c068abd73360"
+    };
 
-  <div id="chatroom" class="container hidden">
-    <h2 id="room-title"></h2>
-    <div
-      id="messages"
-      style="height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;"
-    ></div>
-    <input type="text" id="message-input" placeholder="Type your message here..." />
-    <button id="send-message">Send</button>
-    <button onclick="goBack()">Return to Chatrooms</button>
-  </div>
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const loginSection = document.getElementById("loginSection");
+    const chatroomsList = document.getElementById("chatroomsList");
+    const chatroomsContainer = document.getElementById("chatroomsContainer");
+    const chatroomView = document.getElementById("chatroomView");
+    const chatroomName = document.getElementById("chatroomName");
+    const returnBtn = document.getElementById("returnBtn");
+    const messages = document.getElementById("messages");
+    const messageForm = document.getElementById("messageForm");
+    const messageInput = document.getElementById("messageInput");
 
-  <!-- Your app script -->
-  <script src="scripts/app.js"></script>
+    let currentUser = null;
+    let currentChatroomId = null;
+    let unsubscribeMessages = null;
+
+    loginBtn.onclick = () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider);
+    };
+
+    logoutBtn.onclick = () => {
+      auth.signOut();
+    };
+
+    returnBtn.onclick = () => {
+      if (unsubscribeMessages) unsubscribeMessages();
+      chatroomView.style.display = "none";
+      chatroomsList.style.display = "block";
+    };
+
+    messageForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const text = messageInput.value.trim();
+      if (text && currentChatroomId) {
+        await db.collection("chatrooms").doc(currentChatroomId).collection("messages").add({
+          user: currentUser.displayName,
+          uid: currentUser.uid,
+          text,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        messageInput.value = "";
+      }
+    };
+
+    auth.onAuthStateChanged(async user => {
+      if (user) {
+        currentUser = user;
+        loginSection.style.display = "none";
+        chatroomsList.style.display = "block";
+        loadUserChatrooms(user);
+      } else {
+        currentUser = null;
+        loginSection.style.display = "block";
+        chatroomsList.style.display = "none";
+        chatroomView.style.display = "none";
+      }
+    });
+
+    async function loadUserChatrooms(user) {
+      const memberDoc = await db.collection("members").doc(user.uid).get();
+      if (!memberDoc.exists || !memberDoc.data().approved) {
+        alert("Your account is pending approval.");
+        auth.signOut();
+        return;
+      }
+
+      const memberChatrooms = memberDoc.data().chatrooms || [];
+      chatroomsContainer.innerHTML = "";
+
+      for (const chatroomId of memberChatrooms) {
+        const chatroomDoc = await db.collection("chatrooms").doc(chatroomId).get();
+        if (chatroomDoc.exists) {
+          const btn = document.createElement("button");
+          btn.textContent = chatroomDoc.data().name || "Unnamed Chatroom";
+          btn.onclick = () => enterChatroom(chatroomId, chatroomDoc.data().name);
+          chatroomsContainer.appendChild(btn);
+        }
+      }
+
+      if (memberChatrooms.length === 0) {
+        chatroomsContainer.innerHTML = "<p>You haven't been added to any chatrooms yet.</p>";
+      }
+    }
+
+    function enterChatroom(chatroomId, name) {
+      currentChatroomId = chatroomId;
+      chatroomName.textContent = name;
+      chatroomsList.style.display = "none";
+      chatroomView.style.display = "block";
+      messages.innerHTML = "";
+
+      unsubscribeMessages = db.collection("chatrooms").doc(chatroomId).collection("messages")
+        .orderBy("timestamp")
+        .onSnapshot(snapshot => {
+          messages.innerHTML = "";
+          snapshot.forEach(doc => {
+            const msg = doc.data();
+            const div = document.createElement("div");
+            div.className = "message";
+            div.innerHTML = `<strong>${msg.user}:</strong> ${msg.text}`;
+            messages.appendChild(div);
+          });
+          messages.scrollTop = messages.scrollHeight;
+        });
+    }
+  </script>
 </body>
 </html>
