@@ -1,417 +1,226 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>YMF Messaging Platform</title>
-<!-- Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Abeezee&family=Muli&display=swap" rel="stylesheet" />
-<style>
-  body {
-    font-family: 'Muli', sans-serif;
-    background: #fff;
-    color: #000;
-    margin: 0;
-    padding: 0;
-  }
-  header {
-    background-color: #8b1453;
-    color: white;
-    padding: 1rem;
-    font-family: 'Abeezee', serif;
-    font-size: 1.5rem;
-    text-align: center;
-  }
-  .container {
-    max-width: 600px;
-    margin: 1rem auto;
-    padding: 1rem;
-  }
-  input, button, select {
-    font-family: 'Muli', sans-serif;
-    font-size: 1rem;
-    padding: 0.5rem;
-    margin: 0.25rem 0;
-    width: 100%;
-    box-sizing: border-box;
-  }
-  button {
-    background-color: #8b1453;
-    color: white;
-    border: none;
-    cursor: pointer;
-  }
-  button:hover {
-    background-color: #6f0f42;
-  }
-  .hidden {
-    display: none;
-  }
-  .error {
-    color: red;
-    margin: 0.5rem 0;
-  }
-  nav {
-    margin: 1rem 0;
-    text-align: center;
-  }
-  nav button {
-    width: auto;
-    margin: 0 0.5rem;
-  }
-  .chatroom-list button {
-    margin: 0.25rem 0;
-    width: 100%;
-    text-align: left;
-  }
-</style>
-<!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>YMF Messaging Platform</title>
+  <link href="https://fonts.googleapis.com/css2?family=ABeeZee&family=Muli&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Muli', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #fff;
+      color: #000;
+    }
+    header {
+      background-color: #8b1453;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      font-family: 'ABeeZee', sans-serif;
+    }
+    .container {
+      max-width: 600px;
+      margin: 2rem auto;
+      padding: 1rem;
+    }
+    h2 {
+      color: #8b1453;
+    }
+    input, button, select {
+      display: block;
+      width: 100%;
+      margin-bottom: 1rem;
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+    .chatroom {
+      border: 1px solid #ccc;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    .hidden {
+      display: none;
+    }
+    .chatroom-header {
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+    .message {
+      margin: 0.25rem 0;
+    }
+    .return-button {
+      margin-top: 1rem;
+      background-color: #8b1453;
+      color: white;
+      border: none;
+      padding: 0.5rem;
+    }
+  </style>
 </head>
 <body>
+  <header>
+    <img src="static/uploads/ymf-logo.png" alt="YMF Logo" height="60"><br/>
+    <h1>YMF Messaging Platform</h1>
+  </header>
 
-<header>York Music Forum Messaging Platform</header>
-
-<div class="container">
-
-  <!-- NAVIGATION -->
-  <nav id="nav-auth">
-    <button id="show-signin-btn">Sign In</button>
-    <button id="show-signup-btn">Sign Up</button>
-  </nav>
-
-  <nav id="nav-signedin" class="hidden">
-    <button id="btn-signout">Sign Out</button>
-    <button id="btn-go-admin" class="hidden">Admin Panel</button>
-  </nav>
-
-  <!-- SIGN UP FORM -->
-  <section id="signup-section" class="hidden">
-    <h2>Sign Up</h2>
-    <div class="error" id="signup-error"></div>
-    <input type="text" id="signup-name" placeholder="Full Name" required />
-    <input type="email" id="signup-email" placeholder="Email" required />
-    <input type="password" id="signup-password" placeholder="Password" required />
-    <button id="signup-submit">Register</button>
-  </section>
-
-  <!-- SIGN IN FORM -->
-  <section id="signin-section" class="hidden">
+  <div class="container" id="auth-section">
     <h2>Sign In</h2>
-    <div class="error" id="signin-error"></div>
-    <input type="email" id="signin-email" placeholder="Email" required />
-    <input type="password" id="signin-password" placeholder="Password" required />
-    <button id="signin-submit">Sign In</button>
-  </section>
+    <input type="email" id="email" placeholder="Email address" />
+    <input type="password" id="password" placeholder="Password" />
+    <button onclick="signIn()">Sign In</button>
+    <h2>Or Sign Up</h2>
+    <input type="text" id="signup-name" placeholder="Full Name" />
+    <input type="email" id="signup-email" placeholder="Email address" />
+    <input type="password" id="signup-password" placeholder="Password" />
+    <button onclick="signUp()">Sign Up</button>
+  </div>
 
-  <!-- MAIN CHATROOMS LIST -->
-  <section id="chatrooms-section" class="hidden">
-    <h2>Chatrooms</h2>
-    <div class="chatroom-list" id="chatroom-list"></div>
-    <p id="no-chatrooms-msg" class="hidden">No chatrooms assigned.</p>
-  </section>
+  <div class="container hidden" id="approval-pending">
+    <p>Your account is awaiting approval by an admin.</p>
+  </div>
 
-  <!-- CHATROOM MESSAGES SECTION -->
-  <section id="messages-section" class="hidden">
-    <h2 id="chatroom-title"></h2>
-    <div id="messages-container" style="border:1px solid #ccc; height: 300px; overflow-y: auto; padding:0.5rem; margin-bottom:1rem;"></div>
-    <textarea id="message-input" placeholder="Type your message here..." rows="3"></textarea>
-    <button id="send-message-btn">Send Message</button>
-    <button id="btn-back-to-chatrooms">Return to Chatrooms</button>
-  </section>
+  <div class="container hidden" id="chatrooms-section">
+    <h2>Your Chatrooms</h2>
+    <div id="chatroom-list"></div>
+  </div>
 
-</div>
+  <div class="container hidden" id="chatroom-messages-section">
+    <div class="chatroom-header" id="chatroom-title"></div>
+    <div id="messages"></div>
+    <input type="text" id="messageInput" placeholder="Type a message..." />
+    <button onclick="sendMessage()">Send</button>
+    <button class="return-button" onclick="returnToChatrooms()">Return to Chatrooms</button>
+  </div>
 
-<script>
-  // Initialize Firebase
-  const firebaseConfig = {
-    apiKey: "AIzaSyCp94HHzIFiZh5kZREi7ZIVVL67IMnHEXw",
-    authDomain: "ymf-messaging-platform.firebaseapp.com",
-    projectId: "ymf-messaging-platform",
-    storageBucket: "ymf-messaging-platform.appspot.com",
-    messagingSenderId: "820655157281",
-    appId: "1:820655157281:web:9713621443c068abd73360"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore, collection, query, where, getDocs, doc, getDoc,
+      updateDoc, addDoc, onSnapshot, orderBy, setDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import {
+      getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-  // UI Elements
-  const navAuth = document.getElementById('nav-auth');
-  const navSignedIn = document.getElementById('nav-signedin');
-  const btnSignOut = document.getElementById('btn-signout');
-  const btnGoAdmin = document.getElementById('btn-go-admin');
+    const firebaseConfig = {
+      apiKey: "AIzaSyCp94HHzIFiZh5kZREi7ZIVVL67IMnHEXw",
+      authDomain: "ymf-messaging-platform.firebaseapp.com",
+      projectId: "ymf-messaging-platform",
+      storageBucket: "ymf-messaging-platform.firebasestorage.app",
+      messagingSenderId: "820655157281",
+      appId: "1:820655157281:web:9713621443c068abd73360"
+    };
 
-  const signupSection = document.getElementById('signup-section');
-  const signinSection = document.getElementById('signin-section');
-  const chatroomsSection = document.getElementById('chatrooms-section');
-  const messagesSection = document.getElementById('messages-section');
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth();
 
-  const signupError = document.getElementById('signup-error');
-  const signinError = document.getElementById('signin-error');
+    let currentUser = null;
+    let currentChatroom = "";
 
-  const signupName = document.getElementById('signup-name');
-  const signupEmail = document.getElementById('signup-email');
-  const signupPassword = document.getElementById('signup-password');
-  const signupSubmit = document.getElementById('signup-submit');
+    async function signUp() {
+      const name = document.getElementById("signup-name").value;
+      const email = document.getElementById("signup-email").value;
+      const password = document.getElementById("signup-password").value;
 
-  const signinEmail = document.getElementById('signin-email');
-  const signinPassword = document.getElementById('signin-password');
-  const signinSubmit = document.getElementById('signin-submit');
-
-  const chatroomList = document.getElementById('chatroom-list');
-  const noChatroomsMsg = document.getElementById('no-chatrooms-msg');
-
-  const chatroomTitle = document.getElementById('chatroom-title');
-  const messagesContainer = document.getElementById('messages-container');
-  const messageInput = document.getElementById('message-input');
-  const sendMessageBtn = document.getElementById('send-message-btn');
-  const btnBackToChatrooms = document.getElementById('btn-back-to-chatrooms');
-
-  const showSignInBtn = document.getElementById('show-signin-btn');
-  const showSignUpBtn = document.getElementById('show-signup-btn');
-
-  // Current user/session data
-  let currentUser = null;  // { id, name, email, approved, admin, chatrooms: [] }
-  let currentChatroom = null; // chatroom id
-
-  // Utility: Simple password hashing with btoa (for demo only, not secure)
-  function hashPassword(password) {
-    return btoa(password); // base64 encode as simple hash (replace with better hashing if needed)
-  }
-
-  // Show/hide UI sections helper
-  function showSection(...sections) {
-    [signupSection, signinSection, chatroomsSection, messagesSection].forEach(s => s.classList.add('hidden'));
-    sections.forEach(s => s.classList.remove('hidden'));
-  }
-
-  // Show auth nav or signed in nav
-  function updateNav() {
-    if (currentUser) {
-      navAuth.classList.add('hidden');
-      navSignedIn.classList.remove('hidden');
-      if (currentUser.admin) {
-        btnGoAdmin.classList.remove('hidden');
-      } else {
-        btnGoAdmin.classList.add('hidden');
-      }
-    } else {
-      navAuth.classList.remove('hidden');
-      navSignedIn.classList.add('hidden');
-      btnGoAdmin.classList.add('hidden');
-    }
-  }
-
-  // Clear errors
-  function clearErrors() {
-    signupError.textContent = '';
-    signinError.textContent = '';
-  }
-
-  // Show sign-up form
-  function showSignUp() {
-    clearErrors();
-    showSection(signupSection);
-  }
-
-  // Show sign-in form
-  function showSignIn() {
-    clearErrors();
-    showSection(signinSection);
-  }
-
-  // Load chatrooms assigned to user
-  async function loadChatrooms() {
-    chatroomList.innerHTML = '';
-    noChatroomsMsg.classList.add('hidden');
-
-    if (!currentUser.chatrooms || currentUser.chatrooms.length === 0) {
-      noChatroomsMsg.classList.remove('hidden');
-      return;
-    }
-
-    for (const crId of currentUser.chatrooms) {
       try {
-        const doc = await db.collection('chatrooms').doc(crId).get();
-        if (doc.exists) {
-          const cr = doc.data();
-          const btn = document.createElement('button');
-          btn.textContent = cr.name;
-          btn.onclick = () => openChatroom(crId, cr.name);
-          chatroomList.appendChild(btn);
+        await createUserWithEmailAndPassword(auth, email, password);
+        await setDoc(doc(db, "users", email), {
+          name,
+          email,
+          password: btoa(password),
+          approved: false,
+          admin: false,
+          chatrooms: []
+        });
+        alert("Signed up! Waiting for admin approval.");
+      } catch (error) {
+        alert("Signup error: " + error.message);
+      }
+    }
+
+    async function signIn() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        const docRef = doc(db, "users", email);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+          alert("Account not found.");
+          return;
         }
-      } catch (e) {
-        console.error('Error loading chatroom:', e);
+
+        const userData = docSnap.data();
+
+        if (!userData.approved) {
+          document.getElementById("auth-section").classList.add("hidden");
+          document.getElementById("approval-pending").classList.remove("hidden");
+          return;
+        }
+
+        currentUser = userData;
+        loadChatrooms(userData.chatrooms);
+        document.getElementById("auth-section").classList.add("hidden");
+        document.getElementById("chatrooms-section").classList.remove("hidden");
+      } catch (error) {
+        alert("Sign-in failed: " + error.message);
       }
     }
-  }
 
-  // Open chatroom messages
-  function openChatroom(id, name) {
-    currentChatroom = id;
-    chatroomTitle.textContent = name;
-    messagesContainer.innerHTML = '';
-    showSection(messagesSection);
-    loadMessages();
-  }
-
-  // Load messages from Firestore for current chatroom
-  async function loadMessages() {
-    messagesContainer.innerHTML = 'Loading messages...';
-    try {
-      const snapshot = await db.collection('chatrooms').doc(currentChatroom).collection('messages').orderBy('timestamp').get();
-      messagesContainer.innerHTML = '';
-      snapshot.forEach(doc => {
-        const msg = doc.data();
-        const div = document.createElement('div');
-        div.textContent = `${msg.name}: ${msg.text}`;
-        messagesContainer.appendChild(div);
+    function loadChatrooms(chatrooms) {
+      const list = document.getElementById("chatroom-list");
+      list.innerHTML = "";
+      chatrooms.forEach(name => {
+        const div = document.createElement("div");
+        div.className = "chatroom";
+        div.innerHTML = `<strong>${name}</strong><br/><button onclick="enterChatroom('${name}')">Enter</button>`;
+        list.appendChild(div);
       });
-      // Scroll to bottom
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    } catch (e) {
-      messagesContainer.innerHTML = 'Error loading messages.';
-      console.error(e);
     }
-  }
 
-  // Send message to chatroom
-  async function sendMessage() {
-    const text = messageInput.value.trim();
-    if (!text) return;
-    if (!currentChatroom) return;
-    try {
-      await db.collection('chatrooms').doc(currentChatroom).collection('messages').add({
-        uid: currentUser.id,
-        name: currentUser.name,
-        text: text,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    async function enterChatroom(name) {
+      currentChatroom = name;
+      document.getElementById("chatrooms-section").classList.add("hidden");
+      document.getElementById("chatroom-messages-section").classList.remove("hidden");
+      document.getElementById("chatroom-title").textContent = name;
+      document.getElementById("messages").innerHTML = "";
+
+      const q = query(collection(db, "chatrooms", name, "messages"), orderBy("timestamp"));
+      onSnapshot(q, (snapshot) => {
+        const messagesDiv = document.getElementById("messages");
+        messagesDiv.innerHTML = "";
+        snapshot.forEach(doc => {
+          const msg = doc.data();
+          const p = document.createElement("p");
+          p.className = "message";
+          p.textContent = `${msg.sender}: ${msg.text}`;
+          messagesDiv.appendChild(p);
+        });
       });
-      messageInput.value = '';
-      loadMessages();
-    } catch (e) {
-      alert('Error sending message.');
-      console.error(e);
-    }
-  }
-
-  // Sign-up function
-  async function signUp() {
-    clearErrors();
-    const name = signupName.value.trim();
-    const email = signupEmail.value.trim().toLowerCase();
-    const password = signupPassword.value;
-
-    if (!name || !email || !password) {
-      signupError.textContent = 'Please fill in all fields.';
-      return;
     }
 
-    try {
-      // Check if user exists
-      const existing = await db.collection('members').where('email', '==', email).get();
-      if (!existing.empty) {
-        signupError.textContent = 'Email already registered.';
-        return;
-      }
+    async function sendMessage() {
+      const text = document.getElementById("messageInput").value.trim();
+      if (!text) return;
 
-      // Create user (approved = false by default, admin = false)
-      const hashed = hashPassword(password);
-      const newDoc = await db.collection('members').add({
-        name,
-        email,
-        password: hashed,
-        approved: false,
-        admin: false,
-        chatrooms: []
+      await addDoc(collection(db, "chatrooms", currentChatroom, "messages"), {
+        sender: currentUser.name,
+        text,
+        timestamp: new Date()
       });
 
-      alert('Registered successfully! Your account must be approved by an admin before signing in.');
-      // Clear fields
-      signupName.value = '';
-      signupEmail.value = '';
-      signupPassword.value = '';
-      showSignIn();
-
-    } catch (e) {
-      signupError.textContent = 'Error during registration.';
-      console.error(e);
+      document.getElementById("messageInput").value = "";
     }
-  }
 
-  // Sign-in function
-  async function signIn() {
-    clearErrors();
-    const email = signinEmail.value.trim().toLowerCase();
-    const password = signinPassword.value;
-    if (!email || !password) {
-      signinError.textContent = 'Please enter email and password.';
-      return;
+    function returnToChatrooms() {
+      document.getElementById("chatroom-messages-section").classList.add("hidden");
+      document.getElementById("chatrooms-section").classList.remove("hidden");
     }
-    try {
-      const hashed = hashPassword(password);
-      const query = await db.collection('members').where('email', '==', email).where('password', '==', hashed).where('approved', '==', true).get();
-
-      if (query.empty) {
-        signinError.textContent = 'No approved account found with this email/password.';
-        return;
-      }
-
-      // Should be exactly one
-      const userDoc = query.docs[0];
-      const userData = userDoc.data();
-      currentUser = {
-        id: userDoc.id,
-        name: userData.name,
-        email: userData.email,
-        approved: userData.approved,
-        admin: userData.admin,
-        chatrooms: userData.chatrooms || []
-      };
-
-      signinEmail.value = '';
-      signinPassword.value = '';
-
-      updateNav();
-      await loadChatrooms();
-      showSection(chatroomsSection);
-
-    } catch (e) {
-      signinError.textContent = 'Error signing in.';
-      console.error(e);
-    }
-  }
-
-  // Sign-out function
-  function signOut() {
-    currentUser = null;
-    currentChatroom = null;
-    updateNav();
-    showSignIn();
-  }
-
-  // Button event listeners
-  showSignInBtn.onclick = () => showSignIn();
-  showSignUpBtn.onclick = () => showSignUp();
-  signupSubmit.onclick = () => signUp();
-  signinSubmit.onclick = () => signIn();
-  btnSignOut.onclick = () => signOut();
-  btnGoAdmin.onclick = () => {
-    window.location.href = 'admin.html';
-  };
-  sendMessageBtn.onclick = () => sendMessage();
-  btnBackToChatrooms.onclick = () => {
-    currentChatroom = null;
-    showSection(chatroomsSection);
-  };
-
-  // On page load, default to sign in form
-  window.onload = () => {
-    updateNav();
-    showSignIn();
-  };
-</script>
-
+  </script>
 </body>
 </html>
